@@ -71,8 +71,8 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
 
 # %%
 elements_per_group = 2
-iterations = 1
-signals = [1]
+iterations = 10
+signals = [1,2,3,4]
 total_features = elements_per_group * 4 + 1
 for b in signals:
     occ_dp = np.zeros(total_features - 1)
