@@ -1,4 +1,5 @@
 #%%
+from binascii import b2a_hex
 import numpy as np
 from scipy.special import expit
 from scipy.stats import pearsonr
@@ -76,11 +77,11 @@ total_features = elements_per_group * 4 + 1
 for b in signals:
     occ_dp = np.zeros(total_features - 1)
     occ_eqop = np.zeros(total_features - 1)
-    result_df = pd.DataFrame(columns=['fis_dp','occ_dp','fis_eqop','occ_eqop'])
-    total_stn = 0
+    result_df = pd.DataFrame(columns=['fis_dp','occ_dp','fis_eqop','occ_eqop','stn'])
+    
     for i in range (iterations):
         x, z, y, beta, stn = toy_4group(elements_per_group,1500,0.75,b)
-        total_stn += stn
+        
         
         parameters = {'max_features':[0.5, 0.6, 0.7, 0.8]}
         clf = RandomForestClassifier(n_estimators=100,n_jobs=-2)
@@ -96,27 +97,26 @@ for b in signals:
         #######occlusion#########
         
         testX,testy, test_z, test_beta, test_stn  = toy_4group(elements_per_group,1000,0.75,2)
-    sklearn_tree_all = clf
-    sklearn_tree_all.fit(x,y)
-    pred_all = sklearn_tree_all.predict(testX)
-    testX_with_protected = np.concatenate((testX,np.reshape(test_z,(-1,1))),axis = 1)
-    fairness_all_eqop = 1 - util.eqop(testX_with_protected,testy,pred_all,total_features-1,0)
-    fairness_all_dp = 1 - util.eqop(testX_with_protected,testy,pred_all,total_features-1,0)
-    for j in range (total_features - 1):
-        #print(j+1)
-        train_data_without_feature = np.delete(x,j,axis=1)
-        sklearn_tree= clf
-        sklearn_tree.fit(train_data_without_feature,y)
-        test_data_without_feature = np.delete(testX,j,axis=1)
-        prediction = sklearn_tree.predict(test_data_without_feature)
-        test_data_without_feature_with_protected = np.concatenate((test_data_without_feature,np.reshape(test_z,(-1,1))),axis=1)
-        occ_dp[j] = fairness_all_dp - (1 - util.DP(test_data_without_feature_with_protected,testy,prediction,total_features-2,0))
-        occ_eqop[j] = fairness_all_dp - (1 - util.eqop(test_data_without_feature_with_protected,testy,prediction,total_features-2,0))
+        sklearn_tree_all = clf
+        sklearn_tree_all.fit(x,y)
+        pred_all = sklearn_tree_all.predict(testX)
+        testX_with_protected = np.concatenate((testX,np.reshape(test_z,(-1,1))),axis = 1)
+        fairness_all_eqop = 1 - util.eqop(testX_with_protected,testy,pred_all,total_features-1,0)
+        fairness_all_dp = 1 - util.eqop(testX_with_protected,testy,pred_all,total_features-1,0)
+        for j in range (total_features - 1):
+            train_data_without_feature = np.delete(x,j,axis=1)
+            sklearn_tree= clf
+            sklearn_tree.fit(train_data_without_feature,y)
+            test_data_without_feature = np.delete(testX,j,axis=1)
+            prediction = sklearn_tree.predict(test_data_without_feature)
+            test_data_without_feature_with_protected = np.concatenate((test_data_without_feature,np.reshape(test_z,(-1,1))),axis=1)
+            occ_dp[j] = fairness_all_dp - (1 - util.DP(test_data_without_feature_with_protected,testy,prediction,total_features-2,0))
+            occ_eqop[j] = fairness_all_dp - (1 - util.eqop(test_data_without_feature_with_protected,testy,prediction,total_features-2,0))
 
         for k in range(total_features-1):
-            result_df = result_df.append({'fis_dp':fis_dp[k],'occ_dp':occ_dp[k],'fis_eqop':fis_eqop[k],'occ_eqop':occ_eqop[k]}, ignore_index=True)
+            result_df = result_df.append({'fis_dp':fis_dp[k],'occ_dp':occ_dp[k],'fis_eqop':fis_eqop[k],'occ_eqop':occ_eqop[k],'stn':stn}, ignore_index=True)
 
-        name = "result"+"_"+str(elements_per_group)+"_"+str(math.ceil(stn/iterations))+".csv"
+        name = "result"+"_"+str(elements_per_group)+"_"+str(b)+".csv"
         result_df.to_csv(name)
 #%%
 
