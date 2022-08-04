@@ -70,7 +70,7 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
 
 
 # %%
-elements_per_group = 2
+elements_per_group = 3
 iterations = 10
 signals = [1,2,3,4]
 total_features = elements_per_group * 4 + 1
