@@ -71,8 +71,8 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
 
 # %%
 elements_per_group = 2
-iterations = 10
-signals = [1,2,3,4]
+iterations = 1
+signals = [1]
 total_features = elements_per_group * 4 + 1
 for b in signals:
     occ_dp = np.zeros(total_features - 1)
@@ -116,9 +116,8 @@ for b in signals:
         for k in range(total_features-1):
             result_df = result_df.append({'fis_dp':fis_dp[k],'occ_dp':occ_dp[k],'fis_eqop':fis_eqop[k],'occ_eqop':occ_eqop[k],'stn':stn}, ignore_index=True)
 
-        name = "result"+"_"+str(elements_per_group)+"_"+str(b)+".csv"
-        result_df.to_csv(name)
-#%%
+    name = "result"+"_"+str(elements_per_group)+"_"+str(b)+".csv"
+    result_df.to_csv(name)
 
 
 # %%
