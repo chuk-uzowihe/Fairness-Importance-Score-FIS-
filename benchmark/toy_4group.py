@@ -1,5 +1,5 @@
 #%%
-from binascii import b2a_hex
+
 import numpy as np
 from scipy.special import expit
 from scipy.stats import pearsonr
@@ -49,8 +49,8 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
     
     for i in range(elements_per_group):
         for j in range(total_samples):
-            g1[i][j] = np.random.normal(np.random.uniform(min_group_01,max_group_01)*z[j],1) + np.random.normal(0,1)
-            g2[i][j] = np.random.normal(np.random.uniform(min_group_01,max_group_01)*z[j],1) + np.random.normal(0,1)
+            g1[i][j] = np.random.normal(np.random.uniform(min_group_01,max_group_01)*z[j],4)
+            g2[i][j] = np.random.normal(np.random.uniform(min_group_01,max_group_01)*z[j],4)
         g3[i] = np.random.normal(np.random.uniform(min_group_01,max_group_01),4,total_samples)
         g4[i] = np.random.normal(np.random.uniform(min_group_01,max_group_01),4,total_samples)
     
@@ -61,18 +61,20 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
     beta = select_beta(elements_per_group, b)
     mu = np.matmul(x,beta) + np.random.normal(0,1,total_samples)
     gama = expit(mu)
-    signal_to_noise = np.var(mu)
+    signal_to_noise = np.var(np.matmul(x,beta))
     y = np.zeros(total_samples)
     for i in range(total_samples):
         y[i] = np.random.binomial(1,gama[i])
-    
+    #x = x + np.random.normal(0,1,total_samples) + 
     return x,z,y,beta, signal_to_noise
 
 
 # %%
 elements_per_group = 3
 iterations = 10
-signals = [1,2,3,4]
+#signals = [1,1.6,1.95,2.25]
+signals = [0.1,0.5,0.72,0.88]
+#2 signals = [0.1,0.7, 0.95,1.2]
 total_features = elements_per_group * 4 + 1
 for b in signals:
     occ_dp = np.zeros(total_features - 1)
@@ -116,7 +118,7 @@ for b in signals:
         for k in range(total_features-1):
             result_df = result_df.append({'fis_dp':fis_dp[k],'occ_dp':occ_dp[k],'fis_eqop':fis_eqop[k],'occ_eqop':occ_eqop[k],'stn':stn}, ignore_index=True)
 
-    name = "result"+"_"+str(elements_per_group)+"_"+str(b)+".csv"
+    name = "result"+"_"+str(elements_per_group)+"_"+str(b)+"2.csv"
     result_df.to_csv(name)
 
 

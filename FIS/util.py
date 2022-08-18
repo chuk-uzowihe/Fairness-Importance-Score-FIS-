@@ -99,8 +99,8 @@ def fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairnes
         fairness_score01 = DP(x,y,pred01,protected_attribute,protected_val)
         fairness_score10 = DP(x,y,pred10,protected_attribute,protected_val)
         fairness_score11 = DP(x,y,pred11,protected_attribute,protected_val)
-    fairness_score = fairness_score00*left0*right0 + fairness_score01*left0*right1
-    +fairness_score10*left1*right0 + fairness_score11 * left1*right1
+    fairness_score =  fairness_score01*left0*right1
+    +fairness_score10*left1*right0 
     return 1 - fairness_score
 
 

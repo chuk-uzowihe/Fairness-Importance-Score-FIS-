@@ -3,7 +3,32 @@ from FIS.util import *
 from FIS.base import fis_score
 from FIS.fis import fis_tree
 from joblib import Parallel, delayed
+"""
+A class to modify sklearn forests to calculate
+FIS.
+    ----------
+    clf: Classifier
+       The selector is a standard sklearn forest implementation
+    train_x: nDarray of shape nxm
+        The dataset for training
+    y: nDarray of shape nx1:
+        The true training labels
+    protected_attribute: ndarray of shape nX1
+        The protected feature
+    protected_value: int, Default = 0
+        Protected value of the protected attribute
 
+    -----------
+    Examples
+    --------
+    >>> from FIS import fis_forest
+    >>> clf = tree.DecisionTreeClassifier()
+    >>> f_forest = fis_forest(clf,train_x,train_y,z,0)
+    >>> f_forest.fit(train_x, train_y)
+    >>> f_forest.calculate_fairness_importance_score()
+    >>> fis_dp = f_forest._fairness_importance_score_dp
+    >>> fis_eqop = f_forest._fairness_importance_score_eqop
+"""
 class fis_forest(fis_score):
     def __init__(self,clf,train_x,train_y, protected_attribute, protected_value):
         self.clf = clf
