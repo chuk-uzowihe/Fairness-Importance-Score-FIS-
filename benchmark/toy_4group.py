@@ -59,7 +59,7 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
     #x = np.concatenate((x,np.reshape(z,(-1,1))),axis = 1)
 
     beta = select_beta(elements_per_group, b)
-    mu = np.matmul(x,beta) + np.random.normal(0,1,total_samples)
+    mu = np.matmul(x,beta)
     gama = expit(mu)
     signal_to_noise = np.var(np.matmul(x,beta))
     y = np.zeros(total_samples)
