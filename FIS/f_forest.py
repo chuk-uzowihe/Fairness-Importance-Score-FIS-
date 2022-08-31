@@ -3,6 +3,7 @@ from FIS.util import *
 from FIS.base import fis_score
 from FIS.fis import fis_tree
 from joblib import Parallel, delayed
+import sklearn.ensemble._forest as forest_utils
 """
 A class to modify sklearn forests to calculate
 FIS.
@@ -54,6 +55,26 @@ class fis_forest(fis_score):
 
 
     def _importance_for_each_tree(self,tree):
+        '''
+        n_samples = self.train_x.shape[0] # number of training samples
+
+        n_samples_bootstrap = forest_utils._get_n_samples_bootstrap(
+            n_samples, rf.max_samples
+        )
+
+        unsampled_indices_trees = []
+        sampled_indices_trees = []
+
+        for estimator in rf.estimators_:
+            unsampled_indices = forest_utils._generate_unsampled_indices(
+                estimator.random_state, n_samples, n_samples_bootstrap)
+            unsampled_indices_trees.append(unsampled_indices)
+
+            sampled_indices = forest_utils._generate_sample_indices(
+                estimator.random_state, n_samples, n_samples_bootstrap)
+            sampled_indices_trees.append(sampled_indices)
+        '''
+        
         individual_tree = fis_tree(tree, self.train_x, self.train_y, self.protected_attribute, self.protected_value)
         individual_tree._calculate_fairness_importance_score()
         
@@ -75,3 +96,21 @@ class fis_forest(fis_score):
         self._fairness_importance_score_eqop /= len(self.clf.estimators_)
         self._fairness_importance_score_dp_root /= len(self.clf.estimators_)
         self._fairness_importance_score_eqop_root /= len(self.clf.estimators_)
+
+
+    def get_root_node_fairness(self):
+        self.root_node_dp = np.zeros(self.number_of_features)
+        self.root_node_eqop = np.zeros(self.number_of_features)
+        self.feature_count = np.zeros(self.number_of_features)
+        for estimator in self.fairness_estimators:
+            dp, eqop, feature = estimator.get_root_node_fairness()
+            self.root_node_dp[feature] += dp
+            self.root_node_eqop[feature] += eqop
+            self.feature_count[feature] += 1
+
+        for i in range(self.number_of_features):
+            self.root_node_dp[i] /= self.feature_count[i]
+            self.root_node_eqop[i] /= self.feature_count[i]
+
+        
+

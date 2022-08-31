@@ -51,8 +51,9 @@ class fis_tree():
                 
                 self.eqop_at_node[self.children_left[n]] = self.eqop_at_node[self.children_right[n]] = fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
                 self.dp_at_node[self.children_left[n]] = self.dp_at_node[self.children_right[n]] = fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,2)
-        self.eqop_at_node[0] = eqop(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
-        self.dp_at_node[0] = DP(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
+    
+        self.eqop_at_node[0] = 1 - eqop(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
+        self.dp_at_node[0] = 1 - DP(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
 
     def calculate_fairness_importance_score(self):
         for i in range(self.n_nodes):
@@ -71,7 +72,8 @@ class fis_tree():
                     += ((self.eqop_at_node[self.children_left[i]] - self.eqop_at_node[i])\
                         *len(self.samples_at_node[i])/len(self.samples_at_node[0]))
     
-
+    def get_root_node_fairness(self):
+        return self.dp_at_node[1], self.eqop_at_node[1], self.feature[0]
 
 
 

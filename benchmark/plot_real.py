@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 dataset = pd.read_csv("german.csv")
 data_y = dataset['credit']
 X_df = dataset.drop(['credit'], axis=1)
-
+X_df = X_df.iloc[: , 1:]
 X = X_df.to_numpy()
 y = data_y.to_numpy()
 y = np.where(y != 1, 0, y)
@@ -28,7 +28,7 @@ test_x = np.delete(test_x, 4, axis = 1)
 
 total_features = len(X_df.columns) - 1
 feature_name = X_df.columns
-feature_name = np.delete(feature_name, 4)
+feature_name = np.delete(feature_name, [0,4])
 # %%
 def single_result(total_features,iterations,stn1):
     #stn1 = pd.read_csv("result_2_0.1.csv")
@@ -71,7 +71,7 @@ def single_result(total_features,iterations,stn1):
     return dp_mean, dp_err, eqop_mean, eqop_err, occ_dp_mean, occ_dp_err, occ_eqop_mean, occ_eqop_err
 # %%
 
-stn1 = pd.read_csv("result_german.csv")
+stn1 = pd.read_csv("result_german1.csv")
 dp_m1, dp_e1, eq_m1,eq_e1,occd_m1, occd_e1,occe_m1, occe_e1 = single_result(total_features,10,stn1)
 sort_dp = np.argsort(dp_m1)
 min_dp = sort_dp[0:5]
@@ -119,34 +119,34 @@ for i in max_eqop:
 
 # %%
 sns.set_context('talk')
-fontsize = 15
+fontsize = 40
 width = 0.5
 x_axis = np.arange(1,11,1)
 
-fig, ax = plt.subplots(1,figsize=(20,15))
+fig, ax = plt.subplots(1,figsize=(35,30))
 ax.bar(x_axis,dp_mean,yerr = dp_err,width = width, color = 'r', label = "FIS")
 #ax.legend()
 fig.supylabel("Fairness Importance Score(FIS)", fontsize= fontsize)
 fig.supxlabel("Feature", fontsize= fontsize)
 #ax.set_xticks([])
 ax.set_xticks(list(range(1,11)))
-ax.set_xticklabels(features_plotted, rotation=45, ha='right')
-plt.savefig("german_dp.pdf", fontsize= fontsize)
+ax.set_title("FIS with DP", fontsize= fontsize)
+ax.set_xticklabels(features_plotted, rotation=15, ha='right', fontsize =fontsize)
+plt.savefig("german_dp1.pdf")
 #ax.bar(x_axis,occ_mean,yerr = occ_err,width = width, color = 'b', label = "OFS")
 # %%
-sns.set_context('talk')
-fontsize = 15
-width = 0.5
+
 x_axis = np.arange(1,11,1)
 
-fig, ax = plt.subplots(1,figsize=(20,15))
+fig, ax = plt.subplots(1,figsize=(35,30))
 ax.bar(x_axis,eqop_mean,yerr = eqop_err,width = width, color = 'r', label = "FIS")
 #ax.bar(x_axis,occe_mean,yerr = occe_err,width = width, color = 'b', label = "OFS")
 fig.supylabel("Fairness Importance Score(FIS)", fontsize= fontsize)
 fig.supxlabel("Feature", fontsize= fontsize)
 #ax.legend()
 #ax.set_xticks([])
+ax.set_title("FIS with EQOP", fontsize= fontsize)
 ax.set_xticks(list(range(1,11)))
-ax.set_xticklabels(features_plotted, rotation=45, ha='right', fontsize= fontsize)
-plt.savefig("german_eqop.pdf")
+ax.set_xticklabels(features_plotted, rotation=15, ha='right', fontsize= fontsize)
+plt.savefig("german_eqop1.pdf")
 # %%

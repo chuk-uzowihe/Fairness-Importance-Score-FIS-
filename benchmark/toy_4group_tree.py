@@ -72,38 +72,35 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
 # %%
 elements_per_group = 3
 iterations = 10
+total_samples = 1500
 #signals = [1,1.6,1.95,2.25]
 #signals = [0.1,0.5,0.72,0.88]
 #2 signals = [0.1,0.7, 0.95,1.2]
-number_of_samples = 100
 signals = [0.55,1.25,1.8]
 total_features = elements_per_group * 4 + 1
 for b in signals:
     occ_dp = np.zeros(total_features - 1)
     occ_eqop = np.zeros(total_features - 1)
-
-    result_df = pd.DataFrame(columns=['fis_dp','occ_dp','fis_eqop','occ_eqop','dp_root','eq_root','stn'])
+    result_df = pd.DataFrame(columns=['fis_dp','fis_eqop','dp_root','eq_root','fis_root_dp','fis_root_eqop','feature_root','stn'])
     
     for i in range (iterations):
-        x, z, y, beta, stn = toy_4group(elements_per_group,number_of_samples,0.5,b)
+        x, z, y, beta, stn = toy_4group(elements_per_group,total_samples,0.5,b)
         
         
         #parameters = {'max_features':[0.5, 0.6, 0.7, 0.8]}
-        clf = RandomForestClassifier(n_estimators=100,n_jobs=-2)
+        clf = DecisionTreeClassifier(max_depth=8)
         #clf.fit(x,y)
         #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
-
+        clf.fit(x,y)
         #####our approach#########
-        f_forest = fis_forest(clf,x,y,z,0)
-        f_forest.fit(x,y)
-        f_forest.calculate_fairness_importance_score()
+        f_forest = fis_tree(clf,x,y,z,0)
+        f_forest._calculate_fairness_importance_score()
         fis_dp = f_forest._fairness_importance_score_dp
         fis_eqop = f_forest._fairness_importance_score_eqop
-        fis_root_dp = f_forest.root_node_dp
-        fis_root_eqop = f_forest.root_node_eqop
-
+        fis_root_dp = f_forest._fairness_importance_score_dp_root
+        fis_root_eqop = f_forest._fairness_importance_score_eqop_root
         #######occlusion#########
-        
+        '''
         testX,testy, test_z, test_beta, test_stn  = toy_4group(elements_per_group,1000,0.75,2)
         sklearn_tree_all = clf
         sklearn_tree_all.fit(x,y)
@@ -120,11 +117,11 @@ for b in signals:
             test_data_without_feature_with_protected = np.concatenate((test_data_without_feature,np.reshape(test_z,(-1,1))),axis=1)
             occ_dp[j] = fairness_all_dp - (1 - util.DP(test_data_without_feature_with_protected,testy,prediction,total_features-2,0))
             occ_eqop[j] = fairness_all_dp - (1 - util.eqop(test_data_without_feature_with_protected,testy,prediction,total_features-2,0))
-
+        '''
         for k in range(total_features-1):
-            result_df = result_df.append({'fis_dp':fis_dp[k],'occ_dp':occ_dp[k],'fis_eqop':fis_eqop[k],'occ_eqop':occ_eqop[k],'dp_root':fis_root_dp[k],'eq_root':fis_root_eqop[k],'stn':stn}, ignore_index=True)
+            result_df = result_df.append({'fis_dp':fis_dp[k],'fis_eqop':fis_eqop[k],'dp_root':fis_root_dp[k],'eq_root':fis_root_eqop[k],'fis_root_dp':f_forest.dp_at_node[1]-f_forest.dp_at_node[0],'fis_root_eqop':f_forest.eqop_at_node[1]-f_forest.eqop_at_node[0],'feature_root':f_forest.fitted_clf.tree_.feature[0],'stn':stn}, ignore_index=True)
 
-    name = "result"+str(number_of_samples)+"_"+str(elements_per_group)+"_"+str(b)+"root_node.csv"
+    name = "result"+str(total_samples)+"_"+str(elements_per_group)+"_"+str(b)+"tree_root.csv"
     result_df.to_csv(name)
 
 
