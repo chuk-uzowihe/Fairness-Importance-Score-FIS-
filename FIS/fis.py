@@ -48,17 +48,22 @@ class fis_tree():
                 X_right = self.train_x_with_protected[right]
                 y_left = self.train_y[left]
                 y_right = self.train_y[right]
-                
+                if n == 0:
+                    self.eqop_at_node[0] = 1 - fairness2(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
+                    self.dp_at_node[0] = 1 - fairness2(X_left, y_left, X_right, y_right,self.number_of_features,0,2)
+                    #self.eqop_at_1 = 1 - previous_fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
+                    #self.dp_at_1 = 1 - previous_fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,2)
                 self.eqop_at_node[self.children_left[n]] = self.eqop_at_node[self.children_right[n]] = fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
                 self.dp_at_node[self.children_left[n]] = self.dp_at_node[self.children_right[n]] = fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,2)
     
-        self.eqop_at_node[0] = 1 - eqop(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
-        self.dp_at_node[0] = 1 - DP(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
+        
 
     def calculate_fairness_importance_score(self):
         for i in range(self.n_nodes):
             if i == 0:
-                self._fairness_importance_score_dp_root[self.feature[i]] += ((self.dp_at_node[self.children_left[i]] - self.dp_at_node[i])*len(self.samples_at_node[i])/len(self.samples_at_node[0]))
+                self._fairness_importance_score_dp_root[self.feature[i]] += \
+                    ((self.dp_at_node[self.children_left[i]] - self.dp_at_node[i])\
+                        /len(self.samples_at_node[0]))
                 self._fairness_importance_score_eqop_root[self.feature[i]] \
                     += ((self.eqop_at_node[self.children_left[i]] - self.eqop_at_node[i])\
                         *len(self.samples_at_node[i])/len(self.samples_at_node[0]))

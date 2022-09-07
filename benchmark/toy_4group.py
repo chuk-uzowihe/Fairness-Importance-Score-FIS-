@@ -97,6 +97,7 @@ for b in signals:
         f_forest = fis_forest(clf,x,y,z,0)
         f_forest.fit(x,y)
         f_forest.calculate_fairness_importance_score()
+        f_forest.get_root_node_fairness()
         fis_dp = f_forest._fairness_importance_score_dp
         fis_eqop = f_forest._fairness_importance_score_eqop
         fis_root_dp = f_forest.root_node_dp

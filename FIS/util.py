@@ -99,6 +99,8 @@ def fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairnes
         fairness_score01 = DP(x,y,pred01,protected_attribute,protected_val)
         fairness_score10 = DP(x,y,pred10,protected_attribute,protected_val)
         fairness_score11 = DP(x,y,pred11,protected_attribute,protected_val)
+    
+    #print(fairness_score00, fairness_score01, fairness_score10, fairness_score11)
     fairness_score =  fairness_score01*left0*right1
     +fairness_score10*left1*right0 
     return 1 - fairness_score
@@ -172,7 +174,7 @@ def print_tree(model_dtree):
             )
 # %%
 def previous_fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairness_metric):
-    print("changed")
+    #print("changed")
     valueLeft, countLeft = np.unique(lefty, return_counts=True)
     valueRight, countRight = np.unique(righty, return_counts=True)
     if len(countLeft) == 2:
@@ -186,9 +188,11 @@ def previous_fairness(leftX,lefty,rightX,righty,protected_attribute,protected_va
         right0 = countRight[0]/len(righty) if valueRight[0] == 0 else 0
         right1 = countRight[0]/len(righty) if valueRight[0] == 1 else 0
 
-
+    
     max_left = np.argmax(countLeft)
     max_right = np.argmax(countRight)
+    
+    '''
     if max_left == max_right:
         if len(countLeft == 1):
             max_right = ~max_right
@@ -210,11 +214,15 @@ def previous_fairness(leftX,lefty,rightX,righty,protected_attribute,protected_va
                     max_left = 0
             #print("now", max_left,max_right)
 
+    '''
+    
+
     pred_left = np.full(len(lefty),max_left)
     pred_right = np.full(len(righty),max_right)
     x = np.concatenate((leftX,rightX),axis=0)
     y = np.concatenate((lefty,righty),axis = 0)
     Prediction = np.concatenate((pred_left,pred_right), axis = 0)
+    
     if fairness_metric == 1:
         fairness_score = eqop(x,y,Prediction,protected_attribute,protected_val)
     else:
@@ -222,37 +230,56 @@ def previous_fairness(leftX,lefty,rightX,righty,protected_attribute,protected_va
     return fairness_score
 
 def fairness2(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairness_metric):
-    print("bernoulli")
+    #print("bernoulli")
     valueLeft, countLeft = np.unique(lefty, return_counts=True)
     valueRight, countRight = np.unique(righty, return_counts=True)
     if len(countLeft) == 2:
-        left_1 = countLeft[1]/len(lefty)
-    else:
-        if valueLeft[0] == 1:
-            left_1 = 1
-        else:
-            left_1 = 0
+        left0, left1 = countLeft[0]/len(lefty), countLeft[1]/len(lefty)
     if len(countRight) == 2:
-        right_1 = countRight[1]/len(righty)
-    else:
-        if valueRight[0] == 1:
-            right_1 = 1
+        right0, right1 = countRight[0]/len(righty), countRight[1]/len(righty)
+    if len(countLeft) == 1:
+        left0 = countLeft[0]/len(lefty) if valueLeft[0] == 0 else 0
+        left1 = countLeft[0]/len(lefty) if valueLeft[0] == 1 else 0
+    if len(countRight) == 1:
+        right0 = countRight[0]/len(righty) if valueRight[0] == 0 else 0
+        right1 = countRight[0]/len(righty) if valueRight[0] == 1 else 0
+    
+    fairness_score = []
+    for i in range(100):
+        pred_left = np.zeros(len(lefty))        
+        pred_right = np.zeros(len(righty))
+        for i in range (len(lefty)):
+            pred_left[i] = np.random.binomial(1, left1)
+        for i in range (len(righty)):
+            pred_right[i] = np.random.binomial(1, right1)
+        
+        x = np.concatenate((leftX,rightX),axis=0)
+        y = np.concatenate((lefty,righty),axis = 0)
+        Prediction = np.concatenate((pred_left,pred_right), axis = 0)
+        if fairness_metric == 1:
+            fairness_score.append(eqop(x,y,Prediction,protected_attribute,protected_val)) 
         else:
-            right_1 = 0
-    pred_left = np.zeros(len(lefty))        
-    pred_right = np.zeros(len(righty))
-    for i in range (len(lefty)):
-        pred_left[i] = np.random.binomial(1, left_1)
-    for i in range (len(righty)):
-        pred_right[i] = np.random.binomial(1, right_1)
+            fairness_score.append(DP(x,y,Prediction,protected_attribute,protected_val)) 
+    print(np.mean(fairness_score))
+    return np.mean(fairness_score)
+
+def fairness_rndm(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairness_metric):
+    #print("bernoulli")
+    left_count = len(lefty)
+    right_count = len(righty)
     x = np.concatenate((leftX,rightX),axis=0)
     y = np.concatenate((lefty,righty),axis = 0)
-    Prediction = np.concatenate((pred_left,pred_right), axis = 0)
-    if fairness_metric == 1:
-        fairness_score = eqop(x,y,Prediction,protected_attribute,protected_val)
-    else:
-        fairness_score = DP(x,y,Prediction,protected_attribute,protected_val)
-    return 1 - fairness_score
+    fairness_score = []
+    for i in range(100):
+        left_indexs = np.random.choice(len(y),left_count)
+        right_indexs = np.random.choice(len(y),right_count)
+        leftX = x[left_indexs]
+        lefty = y[left_indexs]
+        rightX = x[right_indexs]
+        righty = y[right_indexs]
+        fairness_score.append(fairness(leftX, lefty, rightX, righty,protected_attribute,protected_val,fairness_metric)) 
+    
+    return 1 - np.mean(fairness_score)
 
 
 def fairness_wrong(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairness_metric):
