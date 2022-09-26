@@ -29,25 +29,28 @@ class fis_boosting():
     def calculate_fairness_importance_score(self):
         self.trees = []
         self.train_x_with_protected = np.concatenate((self.train_x,np.reshape(self.protected_attribute,(-1,1))),axis=1) 
-        self.dp_pred = 1 - DP(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
-        self.eq_pred = 1 - eqop(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
+        #self.dp_pred = 1 - DP(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
+        #self.eq_pred = 1 - eqop(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
         
         self.trees = Parallel(n_jobs=-2,verbose=1)(
         delayed(self.each_tree)(index) 
         for index in range(self.fitted_clf.n_estimators_)
         )
         
-        for i in range(self.fitted_clf.n_estimators_):
+        for individual_tree in self.trees:
             #individual_tree = fis_tree(self.fitted_clf.estimators_[i,0], self.train_x, self.train_y, self.protected_attribute, self.protected_value)
             #individual_tree._calculate_fairness_importance_score()
             #self.trees.append(individual_tree)
-            self._fairness_importance_score_dp[self.fitted_clf.estimators_[i,0].tree_.feature[0]] += (individual_tree.dp_at_node[1] - self.dp_pred)
-            self._fairness_importance_score_eqop[self.fitted_clf.estimators_[i,0].tree_.feature[0]] += (individual_tree.eqop_at_node[1] - self.eq_pred)
+            for i in range(self.number_of_features):
+                self._fairness_importance_score_dp[i] += individual_tree._fairness_importance_score_dp[i]
+                self._fairness_importance_score_eqop[i] += individual_tree._fairness_importance_score_eqop[i]
         self._fairness_importance_score_dp /= (self.fitted_clf.n_estimators_)
         self._fairness_importance_score_eqop /= (self.fitted_clf.n_estimators_)
 
 
     def calculate_fairness_importance_score_nonstamp(self):
+        w = np.zeros(self.fitted_clf.n_estimators_)
+        
         self.number_of_estimators = self.fitted_clf.n_estimators_
         self.trees = []
         self.train_x_with_protected = np.concatenate((self.train_x,np.reshape(self.protected_attribute,(-1,1))),axis=1) 
@@ -58,6 +61,9 @@ class fis_boosting():
         delayed(self.each_tree)(index) 
         for index in range(self.fitted_clf.n_estimators_)
         )
+        tree = self.fitted_clf.estimators_[0, 0].tree_
+        leaf_mask = tree.children_left == -1  # TREE_LEAF == -1
+        w_i = tree.value[leaf_mask, 0, 0]
        
        
         #for i in range(self.fitted_clf.n_estimators_):

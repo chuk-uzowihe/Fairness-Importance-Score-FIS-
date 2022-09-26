@@ -39,7 +39,7 @@ max_group_01 = 5
 
 #%%
 
-def toy_4group(elements_per_group, total_samples,z_prob,b):
+def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,beta):
     total_features = elements_per_group*4
     z = np.random.binomial(1,z_prob,total_samples)
     g1 = np.zeros((elements_per_group,total_samples))
@@ -49,17 +49,22 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
     
     for i in range(elements_per_group):
         for j in range(total_samples):
-            g1[i][j] = np.random.normal(np.random.uniform(min_group_01,max_group_01)*z[j],4)
-            g2[i][j] = np.random.normal(np.random.uniform(min_group_01,max_group_01)*z[j],4)
-        g3[i] = np.random.normal(np.random.uniform(min_group_01,max_group_01),4,total_samples)
-        g4[i] = np.random.normal(np.random.uniform(min_group_01,max_group_01),4,total_samples)
+            if z[j] == 1:
+                g1[i][j] = np.random.normal(mean_1,4)
+                g2[i][j] = np.random.normal(mean_1,4)
+            else:
+                g1[i][j] = np.random.normal(0,4)
+                g2[i][j] = np.random.normal(0,4)
+            
+        g3[i] = np.random.normal(mean_2,4,total_samples)
+        g4[i] = np.random.normal(mean_2,4,total_samples)
     
     
     x = np.concatenate((np.transpose(g1),np.transpose(g2),np.transpose(g3),np.transpose(g4)),axis = 1)
     #x = np.concatenate((x,np.reshape(z,(-1,1))),axis = 1)
 
-    beta = select_beta(elements_per_group, b)
-    mu = np.matmul(x,beta)
+    
+    mu = np.matmul(x,beta) + np.random.normal(0,1,total_samples)
     gama = expit(mu)
     signal_to_noise = np.var(np.matmul(x,beta))
     y = np.zeros(total_samples)
@@ -70,57 +75,41 @@ def toy_4group(elements_per_group, total_samples,z_prob,b):
 
 #%%
 elements_per_group = 3
-iterations = 10
-number_of_samples = 1500
-#signals = [1,1.6,1.95,2.25]
-#signals = [0.1,0.5,0.72,0.88]
-#2 signals = [0.1,0.7, 0.95,1.2]
+iterations = 1
+number_of_s = [100,500,1000]
 signals = [0.55,1.25,1.8]
 total_features = elements_per_group * 4 + 1
-for b in signals:
-    occ_dp = np.zeros(total_features - 1)
-    occ_eqop = np.zeros(total_features - 1)
-    result_df = pd.DataFrame(columns=['fis_dp','occ_dp','fis_eqop','occ_eqop','dp_root','eq_root','stn'])
-    
-    for i in range (iterations):
-        x, z, y, beta, stn = toy_4group(elements_per_group,number_of_samples,0.5,b)
-        
-        
-        #parameters = {'max_features':[0.5, 0.6, 0.7, 0.8]}
-        clf = GradientBoostingClassifier(n_estimators=100, max_depth=4, max_features='auto')
-        clf.fit(x,y)
-        #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
+for number_of_samples in number_of_s:
+    for b in signals:
+        beta = select_beta(elements_per_group, b)
+        mean_1 = np.random.uniform(min_group_01,max_group_01)
+        mean_2 = np.random.uniform(min_group_01,max_group_01)
+        occ_dp = np.zeros(total_features - 1)
+        occ_eqop = np.zeros(total_features - 1)
 
-        #####our approach#########
-        f_forest = fis_boosting(clf,x,y,z,0)
-        #f_forest.fit(x,y)
-        f_forest.calculate_fairness_importance_score_nonstamp()
-        fis_dp = f_forest._fairness_importance_score_dp
-        fis_eqop = f_forest._fairness_importance_score_eqop
-        fis_root_dp = f_forest._fairness_importance_score_dp_root
-        fis_root_eqop = f_forest._fairness_importance_score_eqop_root
-        #######occlusion#########
+        result_df = pd.DataFrame(columns=['fis_dp','fis_eqop','dp_root','eq_root','stn'])
         
-        testX,testy, test_z, test_beta, test_stn  = toy_4group(elements_per_group,1000,0.75,2)
-        sklearn_tree_all = clf
-        sklearn_tree_all.fit(x,y)
-        pred_all = sklearn_tree_all.predict(testX)
-        testX_with_protected = np.concatenate((testX,np.reshape(test_z,(-1,1))),axis = 1)
-        fairness_all_eqop = 1 - util.eqop(testX_with_protected,testy,pred_all,total_features-1,0)
-        fairness_all_dp = 1 - util.eqop(testX_with_protected,testy,pred_all,total_features-1,0)
-        for j in range (total_features - 1):
-            train_data_without_feature = np.delete(x,j,axis=1)
-            sklearn_tree= clf
-            sklearn_tree.fit(train_data_without_feature,y)
-            test_data_without_feature = np.delete(testX,j,axis=1)
-            prediction = sklearn_tree.predict(test_data_without_feature)
-            test_data_without_feature_with_protected = np.concatenate((test_data_without_feature,np.reshape(test_z,(-1,1))),axis=1)
-            occ_dp[j] = fairness_all_dp - (1 - util.DP(test_data_without_feature_with_protected,testy,prediction,total_features-2,0))
-            occ_eqop[j] = fairness_all_dp - (1 - util.eqop(test_data_without_feature_with_protected,testy,prediction,total_features-2,0))
+        for i in range (iterations):
+            x, z, y, beta, stn = toy_4group(elements_per_group,number_of_samples,0.75,mean_1,mean_2,beta)
+            clf = GradientBoostingClassifier(n_estimators=150, max_depth=1, max_features='auto')
+            clf.fit(x,y)
+            #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
 
-        for k in range(total_features-1):
-            result_df = result_df.append({'fis_dp':fis_dp[k],'occ_dp':occ_dp[k],'fis_eqop':fis_eqop[k],'occ_eqop':occ_eqop[k],'dp_root':fis_root_dp[k],'eq_root':fis_root_eqop[k],'stn':stn}, ignore_index=True)
+            #####our approach#########
+            f_forest = fis_boosting(clf,x,y,z,0)
+            #f_forest.fit(x,y)
+            f_forest.calculate_fairness_importance_score_nonstamp()
+            fis_dp = f_forest._fairness_importance_score_dp
+            fis_eqop = f_forest._fairness_importance_score_eqop
+            fis_root_dp = f_forest._fairness_importance_score_dp_root
+            fis_root_eqop = f_forest._fairness_importance_score_eqop_root
+            #######occlusion#########
+            
+            
 
-    name = "result"+str(number_of_samples)+"_"+str(elements_per_group)+"_"+str(b)+"boosting_nostump.csv"
-    result_df.to_csv(name)
+            for k in range(total_features-1):
+                result_df = result_df.append({'fis_dp':fis_root_dp[k],'fis_eqop':fis_root_eqop[k],'stn':stn}, ignore_index=True)
+
+        name = "boosting"+str(number_of_samples)+"_"+str(elements_per_group)+"_"+str(b)+".csv"
+        result_df.to_csv(name)
 # %%
