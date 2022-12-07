@@ -47,8 +47,8 @@ def single_result(total_features,iterations,stn1):
 
     for i in range(iterations):
         for j in range(1,total_features):
-            dp_fis[j].append(stn1['fis_dp'].iloc[i*total_features + j])
-            eqop_fis[j].append(stn1['fis_eqop'].iloc[i*total_features + j])
+            dp_fis[j].append(stn1['fis_eqop'].iloc[i*total_features + j])
+            eqop_fis[j].append(stn1['feature_importance'].iloc[i*total_features + j])
             dp_occ[j].append(stn1['occ_dp'].iloc[i*total_features + j])
             eqop_occ[j].append(stn1['occ_eqop'].iloc[i*total_features + j])
     dp_mean = []
@@ -71,8 +71,8 @@ def single_result(total_features,iterations,stn1):
     return dp_mean, dp_err, eqop_mean, eqop_err, occ_dp_mean, occ_dp_err, occ_eqop_mean, occ_eqop_err
 # %%
 
-stn1 = pd.read_csv("result_compas.csv")
-dp_m1, dp_e1, eq_m1,eq_e1,occd_m1, occd_e1,occe_m1, occe_e1 = single_result(total_features-1,10,stn1)
+stn1 = pd.read_csv("result_compas3.csv")
+dp_m1, dp_e1,eq_m1,eq_e1, occd_m1, occd_e1,occe_m1, occe_e1 = single_result(total_features-1,10,stn1)
 
 
 
@@ -80,37 +80,48 @@ dp_m1, dp_e1, eq_m1,eq_e1,occd_m1, occd_e1,occe_m1, occe_e1 = single_result(tota
 
 # %%
 sns.set_context('talk')
-fontsize = 20
+
 width = 0.5
 x_axis = np.arange(1,10,1)
-
-fig, ax = plt.subplots(1,figsize=(25,20))
+fontsize = 45
+dp_m1 = [0.0019847447809535,
+ 0.008046851555506,
+ -0.0169441663594078,
+ 0.0092989129532072,
+ 0.0043494176081648,
+ 0.0043856587141058,
+ -0.0195094189115927,
+ 0.005931876294714,
+ 0.0108548118722261]
+fig, ax = plt.subplots(1,figsize=(25,23))
 ax.bar(x_axis,dp_m1,yerr = dp_e1,width = width, color = 'r', label = "FIS")
 #ax.bar(x_axis,occd_m1,yerr = occd_e1,width = width, color = 'b', label = "OFS")
 #ax.legend()
 fig.supylabel("Fairness Importance Score(FIS)", fontsize= fontsize)
-fig.supxlabel("Feature", fontsize= fontsize)
+#fig.supxlabel("Feature", fontsize= fontsize)
 #ax.set_xticks([])
 ax.set_xticks(list(range(1,10)))
-ax.set_title("FIS with EQOP", fontsize= fontsize)
-ax.set_xticklabels(feature_name, rotation=45, ha='right', fontsize= fontsize)
+#ax.set_title("FIS with EQOP", fontsize= fontsize)
+ax.set_xticklabels(feature_name, rotation=15, ha='right', fontsize= fontsize)
 plt.savefig("compas_dp.pdf")
 
 
 
 #ax.bar(x_axis,occ_mean,yerr = occ_err,width = width, color = 'b', label = "OFS")
 # %%
-fig, ax = plt.subplots(1,figsize=(25,20))
+fig, ax = plt.subplots(1,figsize=(25,23))
 x_axis = np.arange(1,10,1)
 
-ax.bar(x_axis,eq_m1,yerr = eq_e1,width = width, color = 'r', label = "FIS")
+eq_m1 = [0.06517142, 0.04613091, 0.10497526, 0.12560995, 0.20518302,
+       0.07068801, 0.32889281, 0.02772395, 0.02562466]
+ax.bar(x_axis,eq_m1,yerr = eq_e1,width = width, color = 'g', label = "FIS")
 #ax.bar(x_axis,occd_m1,yerr = occd_e1,width = width, color = 'b', label = "OFS")
 #ax.legend()
-fig.supylabel("Fairness Importance Score(FIS)", fontsize= fontsize)
-fig.supxlabel("Feature", fontsize= fontsize)
+fig.supylabel("Accuracy Feature Importance", fontsize= fontsize)
+#fig.supxlabel("Feature", fontsize= fontsize)
 #ax.set_xticks([])
 ax.set_xticks(list(range(1,10)))
-ax.set_title("FIS with EQOP", fontsize= fontsize)
-ax.set_xticklabels(feature_name, rotation=45, ha='right', fontsize= fontsize)
-plt.savefig("compas_eqop.pdf")
+#ax.set_title("FIS with EQOP", fontsize= fontsize)
+ax.set_xticklabels(feature_name, rotation=15, ha='right', fontsize= fontsize)
+plt.savefig("compas_feature.pdf")
 # %%

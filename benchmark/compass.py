@@ -27,10 +27,10 @@ test_x = np.delete(test_x, 1, axis = 1)
 total_features = len(X_df.columns)
 
 # %%
-iterations = 10
+iterations = 1
 occ_dp = np.zeros(total_features - 1)
 occ_eqop = np.zeros(total_features - 1)
-result_df = pd.DataFrame(columns=['fis_dp','occ_dp','fis_eqop','occ_eqop','stn'])
+result_df = pd.DataFrame(columns=['fis_dp','occ_dp','fis_eqop','occ_eqop','feature_importance','stn'])
 
 for i in range (iterations):
     #x, z, y, beta, stn = toy_4group(elements_per_group,1500,0.75,b)
@@ -46,6 +46,7 @@ for i in range (iterations):
     f_forest.calculate_fairness_importance_score()
     fis_dp = f_forest._fairness_importance_score_dp
     fis_eqop = f_forest._fairness_importance_score_eqop
+    f_importance = f_forest.clf.feature_importances_
     
     #######occlusion#########
     
@@ -66,9 +67,10 @@ for i in range (iterations):
         occ_dp[j] = fairness_all_dp - (1 - util.DP(test_data_without_feature_with_protected,test_y,prediction,total_features-2,0))
         occ_eqop[j] = fairness_all_dp - (1 - util.eqop(test_data_without_feature_with_protected,test_y,prediction,total_features-2,0))
 
-    for k in range(total_features-1):
-        result_df = result_df.append({'fis_dp':fis_dp[k],'occ_dp':occ_dp[k],'fis_eqop':fis_eqop[k],'occ_eqop':occ_eqop[k],'stn':0}, ignore_index=True)
 
-name = "result"+"_"+"compas1"+".csv"
+    for k in range(total_features-1):
+        result_df = result_df.append({'fis_dp':fis_dp[k],'occ_dp':occ_dp[k],'fis_eqop':fis_eqop[k],'occ_eqop':occ_eqop[k],'feature_importance':f_importance[k],'stn':0}, ignore_index=True)
+
+name = "result"+"_"+"compas4"+".csv"
 result_df.to_csv(name)
 # %%

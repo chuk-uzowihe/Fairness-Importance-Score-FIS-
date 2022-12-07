@@ -3,6 +3,8 @@ import pandas as pd
 from collections import Counter
 import matplotlib.pyplot as plt
 import seaborn as sns
+import math
+from scipy.special import expit
 
 
 
@@ -30,7 +32,7 @@ def eqop(data,label, prediction, protectedIndex, protectedValue):
     negative_rate = tnr_protected - tnr_el
     eqop = (tpr_el - tpr_protected)
     
-    return abs(eqop) 
+    return eqop
 # %%
 
 def DP(data, labels, prediction,protectedIndex, protectedValue):
@@ -39,9 +41,12 @@ def DP(data, labels, prediction,protectedIndex, protectedValue):
         if x[protectedIndex] == protectedValue]   
     elseClass = [(x,l) for (x,l) in zip(data, prediction) 
         if x[protectedIndex] != protectedValue]
+    p = sum(1 for (x,l) in protectedClass if l == 1)
+    q = sum(1 for (x,l) in elseClass  if l == 1)
     protectedProb = sum(1 for (x,l) in protectedClass if l == 1) / len(protectedClass) if len(protectedClass) != 0 else 0
     elseProb = sum(1 for (x,l) in elseClass  if l == 1) / len(elseClass) if len(elseClass) != 0 else 0
-    return abs(elseProb - protectedProb)
+    #print("protected class, non-protected class, protected positive, non-protected positive",len(protectedClass),len(elseClass),p,q)
+    return (elseProb - protectedProb)
 #%%
 def gini(y):
     total_classes, count = np.unique(y, return_counts=True)
@@ -90,20 +95,43 @@ def fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairnes
     pred10 = np.concatenate((np.ones(len(lefty)),np.zeros(len(righty))), axis = 0)
     pred11 = np.concatenate((np.ones(len(lefty)),np.ones(len(righty))), axis = 0)
     if fairness_metric == 1:
-        fairness_score00 = eqop(x,y,pred00,protected_attribute,protected_val)
+        #fairness_score00 = eqop(x,y,pred00,protected_attribute,protected_val)
         fairness_score01 = eqop(x,y,pred01,protected_attribute,protected_val)
+        #print("left 0 prob, right 1 prob", left0, right1)
         fairness_score10 = eqop(x,y,pred10,protected_attribute,protected_val)
-        fairness_score11 = eqop(x,y,pred11,protected_attribute,protected_val)
+        #print("left 1 prob, right 0 prob", left1, right0)
+        #fairness_score11 = eqop(x,y,pred11,protected_attribute,protected_val)
     else:
-        fairness_score00 = DP(x,y,pred00,protected_attribute,protected_val)
+        #fairness_score00 = DP(x,y,pred00,protected_attribute,protected_val)
         fairness_score01 = DP(x,y,pred01,protected_attribute,protected_val)
+        #print("left 0 prob, right 1 prob", left0, right1)
         fairness_score10 = DP(x,y,pred10,protected_attribute,protected_val)
-        fairness_score11 = DP(x,y,pred11,protected_attribute,protected_val)
+        #print("left 1 prob, right 0 prob", left1, right0)
+        #fairness_score11 = DP(x,y,pred11,protected_attribute,protected_val)
     
     #print(fairness_score00, fairness_score01, fairness_score10, fairness_score11)
-    fairness_score =  fairness_score01*left0*right1
-    +fairness_score10*left1*right0 
-    return 1 - fairness_score
+    fairness_score =  fairness_score01*right1 + fairness_score10*left1
+    return 1 - abs(fairness_score)
+
+
+def fairness_regression(leftX,lefty,rightX,righty,protected_attribute,protected_val):
+    #print("probabilistic")
+    
+    x = np.concatenate((leftX,rightX),axis=0)
+    y = np.concatenate((lefty,righty),axis = 0)
+    
+    
+    protectedClass = [l for (x,l) in zip(x, y) 
+        if x[protected_attribute] == protected_val]
+    elseClass = [l for (x,l) in zip(x, y) 
+        if x[protected_attribute] != protected_val]
+    if len(protectedClass) == 0 or len(elseClass) == 0:
+        fairness = 0
+    else:
+        prot_val = np.mean(protectedClass)
+        el_val = np.mean(elseClass)
+        fairness = expit(abs(prot_val - el_val))
+    return 1 - fairness
 
 
 def print_tree(model_dtree):
@@ -271,13 +299,14 @@ def fairness_rndm(leftX,lefty,rightX,righty,protected_attribute,protected_val,fa
     y = np.concatenate((lefty,righty),axis = 0)
     fairness_score = []
     for i in range(100):
-        left_indexs = np.random.choice(len(y),left_count)
-        right_indexs = np.random.choice(len(y),right_count)
+        total_indeces = np.arange(len(y))
+        left_indexs = np.random.choice(len(y),left_count,replace=False)
+        right_indexs = [i for i in total_indeces if i not in left_indexs]
         leftX = x[left_indexs]
         lefty = y[left_indexs]
         rightX = x[right_indexs]
         righty = y[right_indexs]
-        fairness_score.append(fairness(leftX, lefty, rightX, righty,protected_attribute,protected_val,fairness_metric)) 
+        fairness_score.append(fairness_wrong(leftX, lefty, rightX, righty,protected_attribute,protected_val,fairness_metric)) 
     
     return 1 - np.mean(fairness_score)
 
@@ -318,3 +347,21 @@ def fairness_wrong(leftX,lefty,rightX,righty,protected_attribute,protected_val,f
     else:
         fairness_score = DP(x,y,Prediction,protected_attribute,protected_val)
     return fairness_score
+
+
+def fairness_deterministic(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairness_metric):
+    valueLeft, countLeft = np.unique(lefty, return_counts=True)
+    valueRight, countRight = np.unique(righty, return_counts=True)
+    max_left = np.argmax(countLeft)
+    max_right = np.argmax(countRight)
+    pred_left = np.full(len(lefty),max_left)
+    pred_right = np.full(len(righty),max_right)
+    x = np.concatenate((leftX,rightX),axis=0)
+    y = np.concatenate((lefty,righty),axis = 0)
+    Prediction = np.concatenate((pred_left,pred_right), axis = 0)
+    
+    if fairness_metric == 1:
+        fairness_score = eqop(x,y,Prediction,protected_attribute,protected_val)
+    else:
+        fairness_score = DP(x,y,Prediction,protected_attribute,protected_val)
+    return 1 - fairness_score

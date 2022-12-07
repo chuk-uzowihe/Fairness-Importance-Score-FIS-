@@ -6,12 +6,13 @@ from scipy.stats import pearsonr
 import pandas as pd
 import math
 from sklearn.tree import DecisionTreeClassifier
-from FIS import fis_tree, fis_forest
+from FIS import fis_tree, fis_forest, fis_tree_null
 from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.model_selection import RandomizedSearchCV
 from FIS import util
 
+#%%
 #%%
 def select_beta(elements_per_group,b):
     np.random.seed(1000)
@@ -20,16 +21,16 @@ def select_beta(elements_per_group,b):
     for i in range(elements_per_group):
         p = np.random.binomial(1,0.5,1)
         if p == 1:
-            value = np.random.uniform(b/7, b/5)
+            value = b/((i+1)*5)
         else:
-            value = np.random.uniform(-b/5,-b/7)
+            value = -b/((i+1)*5)
         beta[i] = value
     for i in range(elements_per_group*2,elements_per_group*3):
         p = np.random.binomial(1,0.5,1)
         if p == 1:
-            value = np.random.uniform(b/7, b/5)
+            value = 2*b/((i+1)*5)
         else:
-            value = np.random.uniform(-b/5,-b/7)
+            value = -2*b/((i+1)*5)
         beta[i] = value
     #beta[elements_per_group*4] = 20
     return beta
@@ -75,8 +76,8 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,beta):
 
 
 # %%
-elements_per_group = 3
-iterations = 1
+elements_per_group = 2
+iterations = 10
 number_of_s = [100,500,1000]
 signals = [0.55,1.25,1.8]
 total_features = elements_per_group * 4 + 1
@@ -85,10 +86,13 @@ for number_of_samples in number_of_s:
         beta = select_beta(elements_per_group, b)
         mean_1 = np.random.uniform(min_group_01,max_group_01)
         mean_2 = np.random.uniform(min_group_01,max_group_01)
-        occ_dp = np.zeros(total_features - 1)
-        occ_eqop = np.zeros(total_features - 1)
-
-        result_df = pd.DataFrame(columns=['fis_dp','fis_eqop','dp_root','eq_root','stn'])
+        dp_fis = {}
+        eqop_fis = {}
+        accuracy = {}
+        [dp_fis.setdefault(i, []) for i in range(4*elements_per_group)]
+        [eqop_fis.setdefault(i, []) for i in range(4*elements_per_group)]
+        [accuracy.setdefault(i, []) for i in range(4*elements_per_group)]
+        result_df = pd.DataFrame(columns=['fis_dp','fis_eqop','dp_std','eq_std','accuracy','accuracy_var'])
         
         for i in range (iterations):
             x, z, y, beta, stn = toy_4group(elements_per_group,number_of_samples,0.75,mean_1,mean_2,beta)
@@ -103,20 +107,22 @@ for number_of_samples in number_of_s:
             f_forest = fis_forest(clf,x,y,z,0)
             f_forest.fit(x,y)
             f_forest.calculate_fairness_importance_score()
-            f_forest.get_root_node_fairness()
+            #f_forest.get_root_node_fairness()
             fis_dp = f_forest._fairness_importance_score_dp
             fis_eqop = f_forest._fairness_importance_score_eqop
-            fis_root_dp = f_forest._fairness_importance_score_dp_root
-            fis_root_eqop = f_forest._fairness_importance_score_eqop_root
-
+            feature_importance = f_forest.clf.feature_importances_
             #######occlusion#########
             
             
 
             for k in range(total_features-1):
-                result_df = result_df.append({'fis_dp':fis_dp[k],'fis_eqop':fis_eqop[k],'dp_root':fis_root_dp[k],'eq_root':fis_root_eqop[k],'stn':stn}, ignore_index=True)
+                dp_fis[k].append(fis_dp[k])
+                eqop_fis[k].append(fis_eqop[k])
+                accuracy[k].append(feature_importance[k])
+        for i in range(4*elements_per_group):
+            result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
 
-        name = "rndm"+str(number_of_samples)+"_"+str(elements_per_group)+"_"+str(b)+"rf_2.csv"
+        name = "result_30/rndm_lin"+str(number_of_samples)+"_"+str(b)+"rf.csv"
         result_df.to_csv(name)
 
 

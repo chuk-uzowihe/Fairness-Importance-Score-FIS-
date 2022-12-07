@@ -14,21 +14,35 @@ from FIS import util
 import math
 
 #%%
+def select_beta(elements_per_group,b):
+    #np.random.seed(1000)
+    beta = np.zeros((elements_per_group - 1)*2)
+    #possibilities = [7,8,-7,-8]
+    for i in range(len(beta)):
+        p = np.random.binomial(1,0.5,1)
+        if p == 1:
+            value = np.random.uniform(b/7, b/6.5)
+        else:
+            value = np.random.uniform(-b/6.5,-b/7)
+        beta[i] = value
+    #beta[elements_per_group*4] = 20
+    return beta
+#%%
 min_group_01 = 2
 max_group_01 = 3
 
 #%%
-def additive_func(g1,g2,g3,g4,z,elements_per_group,total_samples,a,b):
+def additive_func(g1,g2,g3,g4,elements_per_group,total_samples, beta):
     f = np.zeros(total_samples)
-    for i in range(elements_per_group):
-        for j in range(total_samples):
-            f[j] += 0.5*a * math.exp(0.2*g1[i,j]) +2*b * g3[i,j]
+    
+    for j in range(total_samples):
+        f[j] += 6*beta[0]*math.sin(g1[0,j]*g1[1,j]) + beta[1]*g1[2,j] ** 2 + 6*beta[2]*math.sin(g3[0,j]*g3[1,j]) + beta[3]*g3[2,j] ** 2
     return f
 
 
 #%%
 
-def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,a,b):
+def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
     total_features = elements_per_group*4
     z = np.random.binomial(1,z_prob,total_samples)
     g1 = np.zeros((elements_per_group,total_samples))
@@ -39,11 +53,11 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,a,b):
     for i in range(elements_per_group):
         for j in range(total_samples):
             if z[j] == 1:
-                g1[i][j] = np.random.normal(mean_1,4)
-                g2[i][j] = np.random.normal(mean_1,4)
+                g1[i][j] = np.random.normal(mean,1)
+                g2[i][j] = np.random.normal(mean,1)
             else:
-                g1[i][j] = np.random.normal(0,4)
-                g2[i][j] = np.random.normal(0,4)
+                g1[i][j] = np.random.normal(0,1)
+                g2[i][j] = np.random.normal(0,1)
             
         g3[i] = np.random.normal(0,4,total_samples)
         g4[i] = np.random.normal(0,4,total_samples)
@@ -53,7 +67,7 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,a,b):
     #x = np.concatenate((x,np.reshape(z,(-1,1))),axis = 1)
 
     
-    mu = additive_func(g1,g2,g3,g4,z,elements_per_group,total_samples,a,b)
+    mu = additive_func(g1,g2,g3,g4,elements_per_group,total_samples,beta)
     gama = expit(mu + np.random.normal(0,1,total_samples))
     signal_to_noise = np.var(mu)
     y = np.zeros(total_samples)
@@ -64,22 +78,25 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,a,b):
 
 # %%
 elements_per_group = 3
-iterations = 1
-number_of_s = [500]
-signals = [1.5]
+iterations = 10
+number_of_s = [1000]
+signals = [0.9]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
         
-        mean_1 = np.random.uniform(min_group_01,max_group_01)
-        mean_2 = np.random.uniform(min_group_01,max_group_01)
-        occ_dp = np.zeros(total_features - 1)
-        occ_eqop = np.zeros(total_features - 1)
-
-        result_df = pd.DataFrame(columns=['fis_dp','fis_eqop','dp_root','eq_root','stn'])
+        mean = np.random.uniform(min_group_01,max_group_01)
+        beta = select_beta(elements_per_group, b)
+        dp_fis = {}
+        eqop_fis = {}
+        accuracy = {}
+        [dp_fis.setdefault(i, []) for i in range(4*elements_per_group)]
+        [eqop_fis.setdefault(i, []) for i in range(4*elements_per_group)]
+        [accuracy.setdefault(i, []) for i in range(4*elements_per_group)]
+        result_df = pd.DataFrame(columns=['fis_dp','fis_eqop','dp_std','eq_std','accuracy','accuracy_var'])
         
         for i in range (iterations):
-            x, z, y, stn = toy_4group(elements_per_group,number_of_samples,0.7,mean_1,mean_2,b,b)
+            x, z, y, stn = toy_4group(elements_per_group,number_of_samples,0.7,mean,beta)
             
             
             #parameters = {'max_features':[0.5, 0.6, 0.7, 0.8]}
@@ -101,11 +118,22 @@ for number_of_samples in number_of_s:
             
             
 
-            for k in range(total_features-1):
-                result_df = result_df.append({'fis_dp':fis_dp[k],'fis_eqop':fis_eqop[k],'dp_root':fis_root_dp[k],'eq_root':fis_root_eqop[k],'stn':stn}, ignore_index=True)
+            fis_dp = f_forest._fairness_importance_score_dp
+            fis_eqop = f_forest._fairness_importance_score_eqop
+            feature_importance = f_forest.clf.feature_importances_
+            #######occlusion#########
+            
+            
 
-        name = "rndm_nonlin"+str(number_of_samples)+"_"+str(elements_per_group)+"_"+str(b)+"rf.csv"
-        #result_df.to_csv(name)
+            for k in range(total_features-1):
+                dp_fis[k].append(fis_dp[k])
+                eqop_fis[k].append(fis_eqop[k])
+                accuracy[k].append(feature_importance[k])
+        for i in range(4*elements_per_group):
+            result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
+
+        name = "rndm_nonlin"+str(number_of_samples)+"_"+str(b)+"rf.csv"
+        result_df.to_csv(name)
 
 
 # %%

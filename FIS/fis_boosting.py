@@ -8,7 +8,7 @@ from joblib import Parallel, delayed
 
 
 class fis_boosting():
-    def __init__(self, fitted_clf,train_x,train_y, protected_attribute, protected_value):
+    def __init__(self, fitted_clf,train_x,train_y, protected_attribute, protected_value, normalize = True, regression = False):
         self.fitted_clf = fitted_clf
         self.train_x = train_x
         self.train_y = train_y
@@ -19,14 +19,18 @@ class fis_boosting():
         self._fairness_importance_score_eqop = np.zeros(self.number_of_features)
         self._fairness_importance_score_dp_root = np.zeros(self.number_of_features)
         self._fairness_importance_score_eqop_root = np.zeros(self.number_of_features)
+        self.individual_feature_values = {}
+        self.normalize = normalize
+        self.regression = regression
 
 
     def each_tree(self,index):
-        individual_tree = fis_tree(self.fitted_clf.estimators_[index,0], self.train_x, self.train_y, self.protected_attribute, self.protected_value)
+        individual_tree = fis_tree(self.fitted_clf.estimators_[index,0], self.train_x, self.train_y, self.protected_attribute, self.protected_value, normalize = False, regression=self.regression)
         individual_tree._calculate_fairness_importance_score()
         return individual_tree
     
     def calculate_fairness_importance_score(self):
+        [self.individual_feature_values.setdefault(i, []) for i in range(self.number_of_features)]
         self.trees = []
         self.train_x_with_protected = np.concatenate((self.train_x,np.reshape(self.protected_attribute,(-1,1))),axis=1) 
         #self.dp_pred = 1 - DP(self.train_x_with_protected,self.train_y,self.fitted_clf.predict(self.train_x), self.number_of_features,0)
@@ -41,12 +45,20 @@ class fis_boosting():
             #individual_tree = fis_tree(self.fitted_clf.estimators_[i,0], self.train_x, self.train_y, self.protected_attribute, self.protected_value)
             #individual_tree._calculate_fairness_importance_score()
             #self.trees.append(individual_tree)
+            dp, eq, feature = individual_tree.get_root_node_fairness()
+            null_dp, null_eq, feature_null = individual_tree.get_null_fairness()
+            print(null_dp,dp)
+            self.individual_feature_values[feature].append((dp,eq,null_dp,null_eq))
             for i in range(self.number_of_features):
-                self._fairness_importance_score_dp[i] += individual_tree._fairness_importance_score_dp[i]
-                self._fairness_importance_score_eqop[i] += individual_tree._fairness_importance_score_eqop[i]
+                self._fairness_importance_score_dp[i] += individual_tree._fairness_importance_score_dp_root[i]
+                self._fairness_importance_score_eqop[i] += individual_tree._fairness_importance_score_eqop_root[i]
         self._fairness_importance_score_dp /= (self.fitted_clf.n_estimators_)
         self._fairness_importance_score_eqop /= (self.fitted_clf.n_estimators_)
-
+        if self.normalize == True:
+            self._fairness_importance_score_dp /= np.sum(abs(self._fairness_importance_score_dp))
+            self._fairness_importance_score_eqop /= np.sum(abs(self._fairness_importance_score_eqop))
+            self._fairness_importance_score_dp_root /= np.sum(abs(self._fairness_importance_score_dp_root))
+            self._fairness_importance_score_eqop_root /= np.sum(abs(self._fairness_importance_score_eqop_root))
 
     def calculate_fairness_importance_score_nonstamp(self):
         w = np.zeros(self.fitted_clf.n_estimators_)
