@@ -15,7 +15,6 @@ import math
 
 #%%
 def select_beta(elements_per_group,b):
-    #np.random.seed(1000)
     beta = np.zeros((elements_per_group - 1)*2)
     #possibilities = [7,8,-7,-8]
     for i in range(len(beta)):
@@ -78,9 +77,9 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
 
 # %%
 elements_per_group = 3
-iterations = 10
+iterations = 3
 number_of_s = [1000]
-signals = [0.9]
+signals = [0.6,0.9]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
@@ -118,8 +117,7 @@ for number_of_samples in number_of_s:
             
             
 
-            fis_dp = f_forest._fairness_importance_score_dp
-            fis_eqop = f_forest._fairness_importance_score_eqop
+            
             feature_importance = f_forest.clf.feature_importances_
             #######occlusion#########
             
@@ -132,7 +130,7 @@ for number_of_samples in number_of_s:
         for i in range(4*elements_per_group):
             result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
 
-        name = "rndm_nonlin"+str(number_of_samples)+"_"+str(b)+"rf.csv"
+        name = "result_07/rndm_nonlin"+str(number_of_samples)+"_"+str(b)+"rf.csv"
         result_df.to_csv(name)
 
 

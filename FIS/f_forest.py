@@ -32,7 +32,7 @@ FIS.
     >>> fis_eqop = f_forest._fairness_importance_score_eqop
 """
 class fis_forest(fis_score):
-    def __init__(self,clf,train_x,train_y, protected_attribute, protected_value, normalize = True, regression = False):
+    def __init__(self,clf,train_x,train_y, protected_attribute, protected_value, normalize = True, regression = False, multiclass = False):
         self.clf = clf
         self.train_x = train_x
         self.train_y = train_y
@@ -45,6 +45,7 @@ class fis_forest(fis_score):
         self._fairness_importance_score_eqop_root = np.zeros(self.number_of_features)
         self.normalize = normalize
         self.regression = regression
+        self.multiclass = multiclass
 
     def fit(self, X, y):
         self.clf.fit(X,y)
@@ -78,7 +79,7 @@ class fis_forest(fis_score):
             sampled_indices_trees.append(sampled_indices)
         '''
         
-        individual_tree = fis_tree(tree, self.train_x, self.train_y, self.protected_attribute, self.protected_value, normalize=False, regression=self.regression)
+        individual_tree = fis_tree(tree, self.train_x, self.train_y, self.protected_attribute, self.protected_value, normalize=False, regression=self.regression, multiclass=self.multiclass)
         individual_tree._calculate_fairness_importance_score()
         
         return individual_tree
@@ -104,6 +105,7 @@ class fis_forest(fis_score):
             self._fairness_importance_score_eqop /= np.sum(abs(self._fairness_importance_score_eqop))
             self._fairness_importance_score_dp_root /= np.sum(abs(self._fairness_importance_score_dp_root))
             self._fairness_importance_score_eqop_root /= np.sum(abs(self._fairness_importance_score_eqop_root))
+        
 
     def get_root_node_fairness(self):
         self.root_node_dp = np.zeros(self.number_of_features)

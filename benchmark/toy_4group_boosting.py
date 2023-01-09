@@ -7,7 +7,7 @@ import math
 from sklearn.tree import DecisionTreeClassifier
 from FIS import fis_tree, fis_forest, fis_boosting
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier,GradientBoostingRegressor
 from sklearn.model_selection import RandomizedSearchCV
 from FIS import util
 from xgboost import XGBClassifier
@@ -20,22 +20,22 @@ def select_beta(elements_per_group,b):
     for i in range(elements_per_group):
         p = np.random.binomial(1,0.5,1)
         if p == 1:
-            value = b/((i+1)*5)
+            value = b/((0.3*i+1)*7)
         else:
-            value = -b/((i+1)*5)
+            value = -b/((0.3*i+1)*7)
         beta[i] = value
     for i in range(elements_per_group*2,elements_per_group*3):
         p = np.random.binomial(1,0.5,1)
         if p == 1:
-            value = 2*b/((i+1)*5)
+            value = 4*b/((0.3*i+1)*7)
         else:
-            value = -2*b/((i+1)*5)
+            value = -4*b/((0.3*i+1)*7)
         beta[i] = value
     #beta[elements_per_group*4] = 20
     return beta
 #%%
 min_group_01 = 1
-max_group_01 = 5
+max_group_01 = 3
 
 #%%
 
@@ -67,17 +67,16 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,beta):
     mu = np.matmul(x,beta) + np.random.normal(0,1,total_samples)
     gama = expit(mu)
     signal_to_noise = np.var(np.matmul(x,beta))
-    y = np.zeros(total_samples)
-    for i in range(total_samples):
-        y[i] = np.random.binomial(1,gama[i])
+    y = mu
+    
     #x = x + np.random.normal(0,1,total_samples) + 
     return x,z,y,beta, signal_to_noise
 
 #%%
 elements_per_group = 2
-iterations = 10
-number_of_s = [100,500,1000]
-signals = [0.55,1.25,1.8]
+iterations = 5
+number_of_s = [100,1000]
+signals = [3,6]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
@@ -93,12 +92,12 @@ for number_of_samples in number_of_s:
         result_df = pd.DataFrame(columns=['fis_dp','fis_eqop','dp_std','eq_std','accuracy','accuracy_var'])
         for i in range (iterations):
             x, z, y, beta, stn = toy_4group(elements_per_group,number_of_samples,0.75,mean_1,mean_2,beta)
-            clf = GradientBoostingClassifier(n_estimators=100, max_depth=1, max_features='auto')
+            clf = GradientBoostingRegressor(n_estimators=100, max_depth=1, max_features='auto')
             clf.fit(x,y)
             #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
 
             #####our approach#########
-            f_forest = fis_boosting(clf,x,y,z,0)
+            f_forest = fis_boosting(clf,x,y,z,0, regression = True)
             #f_forest.fit(x,y)
             f_forest.calculate_fairness_importance_score()
             fis_dp = f_forest._fairness_importance_score_dp
@@ -116,7 +115,7 @@ for number_of_samples in number_of_s:
             
             
 
-        name = "result_30/boosting_lin"+str(number_of_samples)+"_"+str(b)+"one.csv"
+        name = "result_07/boosting_lin_reg"+str(number_of_samples)+"_"+str(b)+"one.csv"
         #name1 = "boosting_nonlin"+str(number_of_samples)+"_"+str(elements_per_group)+"_"+str(b)+"1.csv"
         result_df.to_csv(name)
         
