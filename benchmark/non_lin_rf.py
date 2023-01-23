@@ -7,7 +7,7 @@ import pandas as pd
 import math
 from sklearn.tree import DecisionTreeClassifier
 from FIS import fis_tree, fis_forest
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier,RandomForestRegressor
 
 from sklearn.model_selection import RandomizedSearchCV
 from FIS import util
@@ -15,6 +15,7 @@ import math
 
 #%%
 def select_beta(elements_per_group,b):
+    #np.random.seed(1000)
     beta = np.zeros((elements_per_group - 1)*2)
     #possibilities = [7,8,-7,-8]
     for i in range(len(beta)):
@@ -27,15 +28,15 @@ def select_beta(elements_per_group,b):
     #beta[elements_per_group*4] = 20
     return beta
 #%%
-min_group_01 = 2
-max_group_01 = 3
+min_group_01 = 5
+max_group_01 = 10
 
 #%%
 def additive_func(g1,g2,g3,g4,elements_per_group,total_samples, beta):
     f = np.zeros(total_samples)
     
     for j in range(total_samples):
-        f[j] += 6*beta[0]*math.sin(g1[0,j]*g1[1,j]) + beta[1]*g1[2,j] ** 2 + 6*beta[2]*math.sin(g3[0,j]*g3[1,j]) + beta[3]*g3[2,j] ** 2
+        f[j] += 8*math.sin(g1[0,j]*g1[1,j]) + beta[1]*g1[2,j] ** 2 + 8*math.sin(g3[0,j]*g3[1,j]) + beta[3]*g3[2,j] ** 2
     return f
 
 
@@ -52,11 +53,11 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
     for i in range(elements_per_group):
         for j in range(total_samples):
             if z[j] == 1:
-                g1[i][j] = np.random.normal(mean,1)
-                g2[i][j] = np.random.normal(mean,1)
+                g1[i][j] = np.random.normal(mean,4)
+                g2[i][j] = np.random.normal(mean,4)
             else:
-                g1[i][j] = np.random.normal(0,1)
-                g2[i][j] = np.random.normal(0,1)
+                g1[i][j] = np.random.normal(0,4)
+                g2[i][j] = np.random.normal(0,4)
             
         g3[i] = np.random.normal(0,4,total_samples)
         g4[i] = np.random.normal(0,4,total_samples)
@@ -67,7 +68,7 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
 
     
     mu = additive_func(g1,g2,g3,g4,elements_per_group,total_samples,beta)
-    gama = expit(mu + np.random.normal(0,1,total_samples))
+    gama = expit(mu)
     signal_to_noise = np.var(mu)
     y = np.zeros(total_samples)
     for i in range(total_samples):
@@ -77,9 +78,9 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
 
 # %%
 elements_per_group = 3
-iterations = 3
+iterations = 1
 number_of_s = [1000]
-signals = [0.6,0.9]
+signals = [0.65]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
@@ -99,7 +100,7 @@ for number_of_samples in number_of_s:
             
             
             #parameters = {'max_features':[0.5, 0.6, 0.7, 0.8]}
-            clf = RandomForestClassifier(n_estimators=100,n_jobs=-2)
+            clf = RandomForestClassifier(n_estimators=50,n_jobs=-2)
             #clf.fit(x,y)
             #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
 
@@ -107,7 +108,6 @@ for number_of_samples in number_of_s:
             f_forest = fis_forest(clf,x,y,z,0)
             f_forest.fit(x,y)
             f_forest.calculate_fairness_importance_score()
-            f_forest.get_root_node_fairness()
             fis_dp = f_forest._fairness_importance_score_dp
             fis_eqop = f_forest._fairness_importance_score_eqop
             fis_root_dp = f_forest._fairness_importance_score_dp_root
@@ -130,8 +130,8 @@ for number_of_samples in number_of_s:
         for i in range(4*elements_per_group):
             result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
 
-        name = "result_07/rndm_nonlin"+str(number_of_samples)+"_"+str(b)+"rf.csv"
-        result_df.to_csv(name)
+        name = "result/rndm_nonlin_reg"+str(number_of_samples)+"_"+str(b)+"rf.csv"
+        #result_df.to_csv(name)
 
 
 # %%

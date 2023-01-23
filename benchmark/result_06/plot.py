@@ -43,7 +43,7 @@ dp_11, f_11 = single_stn(2,5,stn1_1)
 dp_12, f_12 = single_stn(2,5,stn1_2)
 
 #%%
-fig, ax = plt.subplots(2,1,figsize=(6,8),sharex=True,sharey=True)
+fig, ax = plt.subplots(2,1,figsize=(8,8),sharex=True,sharey=True)
 x_axis = np.arange(1,4*elements_per_group + 1)
 fig.supylabel("Importance Score")
 fig.supxlabel("Feature")
@@ -74,7 +74,8 @@ patch4 =mpatches.Patch(color='c', label='Group -',alpha = 0.2)
 patch5 =mpatches.Patch(color='black', label='Fair FIS')
 patch6 =mpatches.Patch(color='tab:grey', label='FIS')
 
-fig.legend(handles = [patch1,patch2,patch3,patch4,patch5,patch6],loc='upper center', bbox_to_anchor=(0.5, -0.01))
+plt.legend(handles = [patch1,patch2,patch3,patch4,patch5,patch6],loc=2, bbox_to_anchor=(1.05,1.05))
+plt.tight_layout()
 plt.savefig("lin_multi_class.pdf")
 
 #%%

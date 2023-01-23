@@ -79,8 +79,8 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,beta):
 # %%
 elements_per_group = 2
 iterations = 1
-number_of_s = [1000]
-signals = [3]
+number_of_s = [100,1000]
+signals = [3,6]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
@@ -124,7 +124,7 @@ for number_of_samples in number_of_s:
         for i in range(4*elements_per_group):
             result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
 
-        name = "result_07/rndm_lin"+str(number_of_samples)+"_"+str(b)+"rf.csv"
+        name = "result_07/rndm_lin_reg"+str(number_of_samples)+"_"+str(b)+"rf.csv"
         result_df.to_csv(name)
 
 

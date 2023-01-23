@@ -15,6 +15,7 @@ from keras.constraints import maxnorm
 from sklearn.tree import DecisionTreeClassifier
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.metrics import r2_score
 #%%
 dataset = pd.read_csv("adult.csv")
 data_y = dataset['income-per-year']
@@ -30,7 +31,8 @@ z_test = test_x[:,3]
 train_x = np.delete(train_x, 3, axis = 1)
 test_x = np.delete(test_x, 3, axis = 1)
 
-total_features = len(X_df.columns)
+total_features = len(X_df.columns) - 1
+column_names = X_df.columns[1:]
 
 # %%
 model = Sequential()
@@ -45,43 +47,51 @@ model.add(Dense(1, activation='sigmoid', kernel_initializer="uniform"))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # Fit the model
-model.fit(train_x, train_y, epochs=10, batch_size=10)
+model.fit(train_x, train_y, epochs=100, batch_size=10)
+#%%
+
 pred = model.predict(train_x)
+test1 = model.predict(test_x)
+pred1 = np.zeros(len(pred))
+pred_test1 = np.zeros(len(test1))
 pred = (pred > 0.5)
+for i in range(len(pred)):
+    pred1[i] = int(pred[i])
+for i in range(len(test1)):
+    pred_test1[i] = int(test1[i])
+#%%
 clf = DecisionTreeClassifier()
-            #clf.fit(x,y)
-            #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
+clf.fit(train_x,pred1)
+pred_test2 = clf.predict(test_x)
 
-            #####our approach#########
-clf.fit(train_x,pred)
-            #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
+#clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
 
-            #####our approach#########
-f_forest = fis_tree(clf,train_x,pred,z,0)
-            
+#%%
+dp_fis = {}
+eqop_fis = {}
+accuracy = {}
+result_df = pd.DataFrame(columns=['fis_dp','fis_eqop','dp_std','eq_std','accuracy','accuracy_var'])
+[dp_fis.setdefault(i, []) for i in range(total_features)]
+[eqop_fis.setdefault(i, []) for i in range(total_features)]
+[accuracy.setdefault(i, []) for i in range(total_features)]
+f_forest = fis_tree(clf,train_x,train_y,z,0)
+
 f_forest._calculate_fairness_importance_score()
-fis_dp = f_forest._fairness_importance_score_dp
-# %%
-feature_imp = clf.feature_importances_
-# %%
-indexes = np.nonzero(fis_dp)
-dps = fis_dp[indexes]
-imps = feature_imp[indexes]
-names = X_df.columns[indexes]
-# %%
-sns.set_context('talk')
-fontsize = 20
-width = 0.5
-x_axis = np.arange(1,len(dps)+1)
-fig, ax = plt.subplots(1,1, figsize=(10, 8),sharex=True)
-ax.bar(x_axis - width/2, dps,color = 'black', label = 'Fair FIS',width = width)
-ax.bar(x_axis + width/2, imps,color = 'grey', label = 'FIS',width = width)
-ax.set_xticklabels(names, fontsize= fontsize, rotation=90)
-ax.set_xticks(list(range(1,len(dps)+1)))
-ax.set_ylabel("Importance Score", fontsize = fontsize)
-ax.set_ylabel("Feature", fontsize = fontsize)
+fis_dp = f_forest._fairness_importance_score_dp_root
+fis_eqop = f_forest._fairness_importance_score_eqop_root
+f_importance = f_forest.fitted_clf.feature_importances_
+#######occlusion#########
 
-fig.legend()
-plt.savefig("output_age.pdf")
-plt.show()
+for k in range(total_features):
+            dp_fis[k].append(fis_dp[k])
+            eqop_fis[k].append(fis_eqop[k])
+            accuracy[k].append(f_importance[k])
+for i in range(total_features):
+    result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
+
+name = "adult/result_surrogate"+"_"+"adult_sex"+".csv"
+# %%
+# %%
+
+
 # %%
