@@ -28,15 +28,15 @@ def select_beta(elements_per_group,b):
     #beta[elements_per_group*4] = 20
     return beta
 #%%
-min_group_01 = 5
-max_group_01 = 10
+min_group_01 = 9
+max_group_01 = 9.5
 
 #%%
 def additive_func(g1,g2,g3,g4,elements_per_group,total_samples, beta):
     f = np.zeros(total_samples)
     
     for j in range(total_samples):
-        f[j] += 8*math.sin(g1[0,j]*g1[1,j]) + beta[1]*g1[2,j] ** 2 + 8*math.sin(g3[0,j]*g3[1,j]) + beta[3]*g3[2,j] ** 2
+        f[j] += 4*beta[0]*math.sin(g1[0,j]*g1[1,j]) + beta[1]*g1[2,j] ** 2 + 4*beta[2]*math.sin(g3[0,j]*g3[1,j]) + 2*beta[3]*g3[2,j] ** 2
     return f
 
 
@@ -54,7 +54,7 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
         for j in range(total_samples):
             if z[j] == 1:
                 g1[i][j] = np.random.normal(mean,4)
-                g2[i][j] = np.random.normal(mean,4)
+                g2[i][j] = 0.4*np.random.normal(mean,4)
             else:
                 g1[i][j] = np.random.normal(0,4)
                 g2[i][j] = np.random.normal(0,4)
@@ -78,9 +78,9 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
 
 # %%
 elements_per_group = 3
-iterations = 1
+iterations = 5
 number_of_s = [1000]
-signals = [0.65]
+signals = [0.3]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
@@ -108,8 +108,8 @@ for number_of_samples in number_of_s:
             f_forest = fis_forest(clf,x,y,z,0)
             f_forest.fit(x,y)
             f_forest.calculate_fairness_importance_score()
-            fis_dp = f_forest._fairness_importance_score_dp
-            fis_eqop = f_forest._fairness_importance_score_eqop
+            fis_dp = f_forest._fairness_importance_score_dp_root
+            fis_eqop = f_forest._fairness_importance_score_eqop_root
             fis_root_dp = f_forest._fairness_importance_score_dp_root
             fis_root_eqop = f_forest._fairness_importance_score_eqop_root
 
@@ -124,8 +124,8 @@ for number_of_samples in number_of_s:
             
 
             for k in range(total_features-1):
-                dp_fis[k].append(fis_dp[k])
-                eqop_fis[k].append(fis_eqop[k])
+                dp_fis[k].append(fis_root_dp[k])
+                eqop_fis[k].append(fis_root_eqop[k])
                 accuracy[k].append(feature_importance[k])
         for i in range(4*elements_per_group):
             result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
