@@ -33,9 +33,9 @@ def select_beta(elements_per_group,b):
     #beta[elements_per_group*4] = 20
     return beta
 #%%
-min_group_01 = 1
-max_group_01 = 3
-var = 2
+min_group_01 = 5
+max_group_01 = 5.5
+var = 4
 
 #%%
 
@@ -67,7 +67,9 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,beta):
     mu = np.matmul(x,beta) + np.random.normal(0,1,total_samples)
     gama = expit(mu)
     signal_to_noise = np.var(np.matmul(x,beta))
-    y = mu
+    y = np.zeros(total_samples)
+    for i in range(total_samples):
+        y[i] = np.random.binomial(1,gama[i])
     
     #x = x + np.random.normal(0,1,total_samples) + 
     return x,z,y,beta, signal_to_noise
@@ -77,9 +79,9 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,beta):
 # %%
 
 elements_per_group = 2
-iterations = 1
-number_of_s = [100,1000]
-signals = [3,6]
+iterations = 100
+number_of_s = [250,1000]
+signals = [1.2]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
@@ -99,7 +101,7 @@ for number_of_samples in number_of_s:
             
             
             #parameters = {'max_features':[0.5, 0.6, 0.7, 0.8]}
-            clf = DecisionTreeRegressor(n_estimators=100,n_jobs=-2)
+            clf = DecisionTreeClassifier()
             #clf.fit(x,y)
             #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
 
@@ -108,7 +110,7 @@ for number_of_samples in number_of_s:
             #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
 
             #####our approach#########
-            f_forest = fis_tree(clf,x,y,z,0,regression=True)
+            f_forest = fis_tree(clf,x,y,z,0)
             
             f_forest._calculate_fairness_importance_score()
             fis_dp = f_forest._fairness_importance_score_dp
@@ -124,6 +126,6 @@ for number_of_samples in number_of_s:
                 accuracy[k].append(feature_importance[k])
         for i in range(4*elements_per_group):
             result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
-        name = "result_07/rndm_lin_reg"+"str(number_of_samples)"+"_lin"+"_"+str(b)+"dt.csv"
+        name = "result_28/lin"+str(number_of_samples)+"_dt.csv"
         result_df.to_csv(name)
 # %%

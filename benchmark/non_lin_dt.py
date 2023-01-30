@@ -29,15 +29,15 @@ def select_beta(elements_per_group,b):
     #beta[elements_per_group*4] = 20
     return beta
 #%%
-min_group_01 = 3
-max_group_01 = 5
+min_group_01 = 9
+max_group_01 = 9.5
 
 #%%
 def additive_func(g1,g2,g3,g4,elements_per_group,total_samples, beta):
     f = np.zeros(total_samples)
     
     for j in range(total_samples):
-        f[j] += 8*beta[0]*math.sin(g1[0,j]*g1[1,j]) + beta[1]*g1[2,j] ** 2 + 8*0.7*beta[2]*math.sin(g3[0,j]*g3[1,j]) + 0.7*beta[3]*g3[2,j] ** 2
+        f[j] += 4*beta[0]*math.sin(g1[0,j]*g1[1,j]) + beta[1]*g1[2,j] ** 2 + 4*beta[2]*math.sin(g3[0,j]*g3[1,j]) + 2*beta[3]*g3[2,j] ** 2
     return f
 
 
@@ -55,7 +55,7 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
         for j in range(total_samples):
             if z[j] == 1:
                 g1[i][j] = np.random.normal(mean,4)
-                g2[i][j] = np.random.normal(mean,4)
+                g2[i][j] = 0.4*np.random.normal(mean,4)
             else:
                 g1[i][j] = np.random.normal(0,4)
                 g2[i][j] = np.random.normal(0,4)
@@ -68,20 +68,20 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean,beta):
     #x = np.concatenate((x,np.reshape(z,(-1,1))),axis = 1)
 
     
-    mu = additive_func(g1,g2,g3,g4,elements_per_group,total_samples,beta)+ np.random.normal(0,1,total_samples)
-    gama = expit(mu + np.random.normal(0,1,total_samples))
+    mu = additive_func(g1,g2,g3,g4,elements_per_group,total_samples,beta)
+    gama = expit(mu)
     signal_to_noise = np.var(mu)
-    y = mu
-    #for i in range(total_samples):
-    #    y[i] = np.random.binomial(1,gama[i])
+    y = np.zeros(total_samples)
+    for i in range(total_samples):
+        y[i] = np.random.binomial(1,gama[i])
     #x = x + np.random.normal(0,1,total_samples) + 
     return x,z,y, signal_to_noise
 
 # %%
 elements_per_group = 3
-iterations = 50
+iterations = 100
 number_of_s = [250,1000]
-signals = [0.65]
+signals = [0.25]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
@@ -103,12 +103,12 @@ for number_of_samples in number_of_s:
             
             
             #parameters = {'max_features':[0.5, 0.6, 0.7, 0.8]}
-            clf = DecisionTreeRegressor()
+            clf = DecisionTreeClassifier()
             clf.fit(x,y)
             #clf = RandomizedSearchCV(estimator = rf, param_distributions = parameters)
 
             #####our approach#########
-            f_forest = fis_tree(clf,x,y,z,0,regression=True)
+            f_forest = fis_tree(clf,x,y,z,0)
             
             f_forest._calculate_fairness_importance_score()
             f_forest._calculate_fairness_importance_score()
@@ -126,7 +126,7 @@ for number_of_samples in number_of_s:
         for i in range(4*elements_per_group):
             result_df = result_df.append({'fis_dp':np.mean(fis_dp[i]),'fis_eqop':np.mean(fis_eqop[i]),'dp_std':np.var(dp_fis[i]),'eq_std':np.var(dp_fis[i]),'accuracy':np.mean(accuracy[i]),'accuracy_var':np.var(accuracy[i])}, ignore_index=True)
 
-        name = "result/rndm_nonlin_reg"+str(number_of_samples)+"_"+str(b)+"dt_2.csv"
+        name = "result/nonlin"+str(number_of_samples)+"_"+str(b)+"dt.csv"
         result_df.to_csv(name)
 
 
