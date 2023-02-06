@@ -25,6 +25,8 @@ train_x = np.delete(train_x, 4, axis = 1)
 test_x = np.delete(test_x, 4, axis = 1)
 
 total_features = len(X_df.columns)
+column_names = X_df.columns
+column_names = column_names.delete(1)
 
 # %%
 iterations = 1
