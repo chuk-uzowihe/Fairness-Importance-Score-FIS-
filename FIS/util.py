@@ -30,7 +30,7 @@ def eqop(data,label, prediction, protectedIndex, protectedValue):
     tnr_protected = tn_protected / len(protected_negative) if len(protected_negative)!= 0 else 0
     tnr_el = tn_el / len(el_negative) if len(el_negative)!= 0 else 0
     negative_rate = tnr_protected - tnr_el
-    eqop = (tpr_el - tpr_protected)
+    eqop = abs(tpr_el - tpr_protected)
     
     return (eqop)
 # %%
@@ -46,7 +46,7 @@ def DP(data, labels, prediction,protectedIndex, protectedValue):
     protectedProb = sum(1 for (x,l) in protectedClass if l == 1) / len(protectedClass) if len(protectedClass) != 0 else 0
     elseProb = sum(1 for (x,l) in elseClass  if l == 1) / len(elseClass) if len(elseClass) != 0 else 0
     #print("protected class, non-protected class, protected positive, non-protected positive",len(protectedClass),len(elseClass),p,q)
-    return (elseProb - protectedProb)
+    return abs(elseProb - protectedProb)
 #%%
 def gini(y):
     total_classes, count = np.unique(y, return_counts=True)

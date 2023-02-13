@@ -15,24 +15,28 @@ import matplotlib.pyplot as plt
 #%%
 #%%
 def select_beta(elements_per_group,b):
-    np.random.seed(5)
+    np.random.seed(15)
     beta = np.zeros(elements_per_group*4)
     #possibilities = [7,8,-7,-8]
     for i in range(elements_per_group):
         p = np.random.binomial(1,0.5,1)
         if p == 1:
-            value = np.random.uniform(b/5,b/7)
+            value = b/(0.05*(i+5))
         else:
-            value = -np.random.uniform(b/5,b/7)
+            value = -b/(0.05*(i+5))
+        
         beta[i] = value
     for i in range(elements_per_group*2,elements_per_group*3):
         p = np.random.binomial(1,0.5,1)
         if p == 1:
-            value = 2*np.random.uniform(b/5,b/7)
+            value = b/(0.05*(i-1))
         else:
-            value = -2*np.random.uniform(b/5,b/7)
+            value = -b/(0.05*(i-1))
         beta[i] = value
     #beta[elements_per_group*4] = 20
+    #beta = [-0.32      ,  0.29666667, -0.25857143,  0.        ,  0.        ,
+    #    0.        ,  0.32      , -0.29666667,  0.25857143,  0.        ,
+    #    0.        ,  0.        ]
     return beta
 #%%
 min_group_01 = 5
@@ -80,7 +84,7 @@ def toy_4group(elements_per_group, total_samples,z_prob,mean_1,mean_2,beta):
 elements_per_group = 3
 iterations = 10
 number_of_s = [250,1000]
-signals = [1.5]
+signals = [0.1]
 total_features = elements_per_group * 4 + 1
 for number_of_samples in number_of_s:
     for b in signals:
@@ -119,7 +123,7 @@ for number_of_samples in number_of_s:
             
             
 
-        name = "result07/lin"+str(number_of_samples)+"_"+"boosting.csv"
+        name = "result07/lin"+str(number_of_samples)+"_"+"boosting2.csv"
         #name1 = "boosting_nonlin"+str(number_of_samples)+"_"+str(elements_per_group)+"_"+str(b)+"1.csv"
         result_df.to_csv(name)
         
