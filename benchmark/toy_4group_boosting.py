@@ -131,8 +131,22 @@ for number_of_samples in number_of_s:
 # %%
 width = 0.4
 x = np.arange(4*elements_per_group)
-plt.bar(x-width,result_df['fis_eqop'],color = 'black',width = width, label = "FairFIS")
+plt.bar(x-width,result_df['fis_dp'],color = 'black',width = width, label = "FairFIS")
 plt.bar(x,result_df['accuracy'],color = 'grey',width = width, label = 'FIS')
 plt.legend()
 plt.show()
+# %%
+k = 5
+value = 0
+while True:
+    value += 60/(k*(k+1)*(k+2))
+    if value >= 1 or k == 10000:
+        print(value)
+        print(k)
+        break
+    else:
+        k = k + 1
+
+
+
 # %%

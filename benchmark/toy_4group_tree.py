@@ -136,7 +136,7 @@ for number_of_samples in number_of_s:
 # %%
 width = 0.4
 x = np.arange(4*elements_per_group)
-plt.bar(x-width,result_df['fis_eqop'],color = 'black',width = width, label = "FairFIS")
+plt.bar(x-width,result_df['fis_dp'],color = 'black',width = width, label = "FairFIS")
 plt.bar(x,result_df['accuracy'],color = 'grey',width = width, label = 'FIS')
 plt.legend()
 plt.show()

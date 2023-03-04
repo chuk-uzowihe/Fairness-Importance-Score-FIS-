@@ -4,7 +4,7 @@ from FIS.base import fis_score
 from FIS.util import *
 
 class fis_tree():
-    def __init__(self, fitted_clf,train_x,train_y, protected_attribute, protected_value, normalize = True, regression = False,multiclass = False):
+    def __init__(self, fitted_clf,train_x,train_y, protected_attribute, protected_value, normalize = True, regression = False,multiclass = False,alpha = 1):
         self.fitted_clf = fitted_clf
         self.train_x = train_x
         self.train_y = train_y
@@ -26,6 +26,7 @@ class fis_tree():
         self.normalize = normalize
         self.regression = regression
         self.multiclass = multiclass
+        self.alpha = alpha
 
     def _calculate_fairness_importance_score(self):
         path = self.fitted_clf.decision_path(self.train_x)
@@ -57,19 +58,27 @@ class fis_tree():
                     #self.eqop_at_1 = 1 - previous_fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
                     #self.dp_at_1 = 1 - previous_fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,2)
                 if self.multiclass == True:
+                    self.eqop_at_node[0] = 1 
+                    self.dp_at_node[0] = 1 
                     self.eqop_at_node[self.children_left[n]] = self.eqop_at_node[self.children_right[n]] = fairness_multiclass(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
                     self.dp_at_node[self.children_left[n]] = self.dp_at_node[self.children_right[n]] = fairness_multiclass(X_left, y_left, X_right, y_right,self.number_of_features,0,2)
+                    
                 elif self.regression == True:
-                    self.eqop_at_node[self.children_left[n]] = self.eqop_at_node[self.children_right[n]] = fairness_regression(X_left, y_left, X_right, y_right,self.number_of_features,0)
-                    self.dp_at_node[self.children_left[n]] = self.dp_at_node[self.children_right[n]] = fairness_regression(X_left, y_left, X_right, y_right,self.number_of_features,0)
+                    self.eqop_at_node[0] = 0
+                    self.dp_at_node[0] = 0
+                    self.eqop_at_node[self.children_left[n]] = self.eqop_at_node[self.children_right[n]] = fairness_regression(X_left, y_left, X_right, y_right,self.number_of_features,0,self.eqop_at_node[n],self.alpha)
+                    self.dp_at_node[self.children_left[n]] = self.dp_at_node[self.children_right[n]] = fairness_regression(X_left, y_left, X_right, y_right,self.number_of_features,0,self.dp_at_node[n],self.alpha)
+                    
                 else:
+                    self.eqop_at_node[0] = 1 
+                    self.dp_at_node[0] = 1 
                     self.eqop_at_node[self.children_left[n]] = self.eqop_at_node[self.children_right[n]] = fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
                     self.dp_at_node[self.children_left[n]] = self.dp_at_node[self.children_right[n]] = fairness(X_left, y_left, X_right, y_right,self.number_of_features,0,2)
+                    
                 #self.eqop_at_node[self.children_left[n]] = 1 - fairness_rndm(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
                 #self.dp_at_node[self.children_left[n]] = 1 - fairness_rndm(X_left, y_left, X_right, y_right,self.number_of_features,0,1)
     
-        self.eqop_at_node[0] = 1 
-        self.dp_at_node[0] = 1 
+        
 
     def calculate_fairness_importance_score(self):
         for i in range(self.n_nodes):

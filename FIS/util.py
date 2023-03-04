@@ -114,27 +114,28 @@ def fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairnes
     return 1 - abs(fairness_score)
 
 
-def fairness_regression(leftX,lefty,rightX,righty,protected_attribute,protected_val,alpha = 1):
+def fairness_regression(leftX,lefty,rightX,righty,protected_attribute,protected_val,previous,alpha = 1):
     #print("probabilistic")
     
     x = np.concatenate((leftX,rightX),axis=0)
     y = np.concatenate((lefty,righty),axis = 0)
-    
-    
-    protectedClass = [l for (x,l) in zip(x, y) 
-        if x[protected_attribute] == protected_val]
-    elseClass = [l for (x,l) in zip(x, y) 
-        if x[protected_attribute] != protected_val]
-    if len(protectedClass) == 0:
-        fairness = 0
-    elif len(elseClass) == 0:
-        fairness = 0
+    left_pred = np.mean(lefty)
+    right_pred = np.mean(righty)
+    left_protected = len([l for (x,l) in zip(leftX,lefty) if
+        x[protected_attribute] == protected_val])
+    left_el = len(lefty) - left_protected
+    right_protected = len([l for (x,l) in zip(rightX,righty) if
+        x[protected_attribute] == protected_val])
+    right_el = len(lefty) - right_protected
+    if (left_protected + right_protected) == 0:
+        bias = previous
+    elif (left_el + right_el) == 0:
+        bias = previous
     else:
-        prot_val = np.mean(protectedClass)
-        el_val = np.mean(elseClass)
-        fairness = math.exp(-alpha * abs(prot_val - el_val))
-        
-    return fairness
+        pred_protected = (left_protected*left_pred + right_protected * right_pred)/(left_protected + right_protected)
+        pred_el = (left_el*left_pred + right_el * right_pred)/(left_el + right_el)    
+        bias = abs(pred_protected - pred_el)
+    return bias
 
 def fairness_multiclass(leftX,lefty,rightX,righty,protected_attribute,protected_val,alpha = 1):
     max = 0
