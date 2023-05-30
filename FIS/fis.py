@@ -64,8 +64,8 @@ class fis_tree():
                     self.dp_at_node[self.children_left[n]] = self.dp_at_node[self.children_right[n]] = fairness_multiclass(X_left, y_left, X_right, y_right,self.number_of_features,0,2)
                     
                 elif self.regression == True:
-                    self.eqop_at_node[0] = 1
-                    self.dp_at_node[0] = 1
+                    self.eqop_at_node[0] = 0
+                    self.dp_at_node[0] = 0
                     self.eqop_at_node[self.children_left[n]] = self.eqop_at_node[self.children_right[n]] = fairness_regression(X_left, y_left, X_right, y_right,self.number_of_features,0,self.eqop_at_node[n],self.alpha)
                     self.dp_at_node[self.children_left[n]] = self.dp_at_node[self.children_right[n]] = fairness_regression(X_left, y_left, X_right, y_right,self.number_of_features,0,self.dp_at_node[n],self.alpha)
                     

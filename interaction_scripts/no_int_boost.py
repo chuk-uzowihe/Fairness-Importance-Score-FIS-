@@ -17,7 +17,7 @@ def I(x):
   indicators = x.astype(int)
   return indicators
     
-        
+#%%        
 def simulate_data(nrow, ncol, alphas, betas, p, tau, seed, regression = False):
     """
     Simulates biased data.
@@ -45,16 +45,16 @@ def simulate_data(nrow, ncol, alphas, betas, p, tau, seed, regression = False):
     # initialize covariate matrix
     X = np.zeros((nrow, ncol))
     for j in range(ncol):
-       X[:,j] =  alphas[j]*z + np.random.normal(loc = 0 , scale = 1, size = nrow)
+       X[:,j] =   np.random.normal(loc = alphas[j]*z , scale = 1, size = nrow)
     xb = (np.ones(nrow) + betas[0]*I(X[:,0] <tau) + betas[1]*I(X[:,1] <tau) + betas[3]*I(X[:,3] <tau) + 
           betas[4]*I(X[:,4] <tau) + betas[5]*I(X[:,5] <tau) + betas[6]*I(X[:,6] <tau) + 
           betas[7]*I(X[:,7] <tau) + betas[8]*I(X[:,8] <tau)+ 
         betas[9]*I(X[:,9] <tau) + betas[10]*I(X[:,10] <tau) + betas[11]*I(X[:,11] <tau))
     if regression == True:
        xb = X@betas
+       print(xb.shape)
        y = xb + np.random.normal(0,0.1,nrow).reshape(-1,1)
        return z,X,y
-
     y_prob = expit(xb)
     
     y = np.zeros(nrow)
@@ -63,11 +63,12 @@ def simulate_data(nrow, ncol, alphas, betas, p, tau, seed, regression = False):
     
     # combine each element of dataset and we are all done!
     return z, X,y
+
 #%%
 iterations = 30
 nrow = 500
 ncol = 12
-alphas = [1,1,1,0,0,0,1,1,1,0,0,0]
+alphas = [2,2,2,0,0,0,2,2,2,0,0,0]
 #beta_imp = 3*np.random.uniform(-1,1, size = 6)
 beta_imp = np.zeros(6)
 np.random.seed(1000)
@@ -76,7 +77,7 @@ for i in range(6):
   if p == 1:
       value = np.random.uniform(3,3.5)
   else:
-      value = np.random.uniform(-3,-3.5)
+      value = np.random.uniform(-3.5,-3)
   
   beta_imp[i] = value
 
@@ -94,7 +95,7 @@ acc_mat = np.empty([iterations,ncol])
 for i in range(iterations):
   
   z, X,y = simulate_data(nrow,ncol ,alphas, betas, p, 0, seeds[i],regression=True)
-  clf = GradientBoostingRegressor(n_estimators=100, max_depth=5, max_features='auto')
+  clf = GradientBoostingRegressor(n_estimators=100, max_depth=6)
   clf.fit(X,y)
   
   #Our approach
@@ -111,8 +112,8 @@ dp_mean = np.mean(dp_mat, axis = 0)
 eo_mean = np.mean(eo_mat, axis = 0)
 acc_mean = np.mean(acc_mat, axis = 0)
 
-np.savetxt("../benchmark/result/dp_boost_reg_500.csv", dp_mean, delimiter= ",")
-np.savetxt("../benchmark/result/acc_boost_reg_500.csv", acc_mean, delimiter= ",")
+#np.savetxt("../benchmark/result/dp_boost_reg_500.csv", dp_mean, delimiter= ",")
+#np.savetxt("../benchmark/result/acc_boost_reg_500.csv", acc_mean, delimiter= ",")
 #%%
 iterations = 30
 nrow = 1000
@@ -126,7 +127,7 @@ for i in range(6):
   if p == 1:
     value = np.random.uniform(3,3.5)
   else:
-    value = np.random.uniform(-3,-3.5)
+    value = np.random.uniform(-3.5,-3)
   
   beta_imp[i] = value
 
@@ -144,7 +145,7 @@ acc_mat = np.empty([iterations,ncol])
 for i in range(iterations):
   
   z, X,y = simulate_data(nrow,ncol ,alphas, betas, p, 0, seeds[i],regression=True)
-  clf = GradientBoostingRegressor(n_estimators=100, max_depth=5, max_features='auto')
+  clf = GradientBoostingRegressor(n_estimators=100, max_depth=5)
   clf.fit(X,y)
   
   #Our approach

@@ -48,7 +48,6 @@ class fis_boosting():
             #self.trees.append(individual_tree)
             dp, eq, feature = individual_tree.get_root_node_fairness()
             null_dp, null_eq, feature_null = individual_tree.get_null_fairness()
-            print(null_dp,dp)
             self.individual_feature_values[feature].append((dp,eq,null_dp,null_eq))
             for i in range(self.number_of_features):
                 self._fairness_importance_score_dp[i] += individual_tree._fairness_importance_score_dp_root[i]

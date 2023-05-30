@@ -45,14 +45,15 @@ def simulate_data(nrow, ncol, alphas, betas, p, tau, seed, regression = False):
     # initialize covariate matrix
     X = np.zeros((nrow, ncol))
     for j in range(ncol):
-       X[:,j] =  alphas[j]*z + np.random.normal(loc = 0 , scale = 1, size = nrow)
+       X[:,j] =   np.random.normal(loc = alphas[j]*z , scale = 1, size = nrow)
     xb = (np.ones(nrow) + betas[0]*I(X[:,0] <tau) + betas[1]*I(X[:,1] <tau) + betas[3]*I(X[:,3] <tau) + 
           betas[4]*I(X[:,4] <tau) + betas[5]*I(X[:,5] <tau) + betas[6]*I(X[:,6] <tau) + 
           betas[7]*I(X[:,7] <tau) + betas[8]*I(X[:,8] <tau)+ 
         betas[9]*I(X[:,9] <tau) + betas[10]*I(X[:,10] <tau) + betas[11]*I(X[:,11] <tau))
     if regression == True:
        xb = X@betas
-       y = xb + np.random.normal(0,0.1,nrow)
+       print(xb.shape)
+       y = xb + np.random.normal(0,0.1,nrow).reshape(-1,1)
        return z,X,y
     y_prob = expit(xb)
     
@@ -64,7 +65,7 @@ def simulate_data(nrow, ncol, alphas, betas, p, tau, seed, regression = False):
     return z, X,y
 
 #%%
-iterations = 25
+iterations = 30
 nrow = 500
 ncol = 12
 alphas = [1,1,1,0,0,0,1,1,1,0,0,0]
@@ -72,11 +73,18 @@ alphas = [1,1,1,0,0,0,1,1,1,0,0,0]
 beta_imp = np.zeros(6)
 np.random.seed(1000)
 for i in range(6):
-  p = np.random.binomial(1,0.5,1)
-  if p == 1:
-      value = np.random.uniform(3,3)
+  if i < 3:
+    p = np.random.binomial(1,0.5,1)
+    if p == 1:
+        value = np.random.uniform(3,3.5)
+    else:
+        value = np.random.uniform(-3,-3.5)
   else:
-      value = np.random.uniform(3,3)
+    p = np.random.binomial(1,0.5,1)
+    if p == 1:
+        value = np.random.uniform(3,3.5)
+    else:
+        value = np.random.uniform(-3.5,-3)
   
   beta_imp[i] = value
 
@@ -86,7 +94,7 @@ beta_unimp = np.zeros(6)
 betas = np.concatenate((beta_imp,beta_unimp))
 
 p = 0.7
-seeds = [12, 2,4,9,1,11,17,19,20,15,1,3,5,7,91,33,34,35,36,37,54,55,56,57,58]
+seeds = [12, 2,4,9,1,11,17,19,20,15,1,3,5,7,91,33,34,35,36,37,54,55,56,57,58,47,48,49,41,43]
 dp_mat = np.empty([iterations,ncol])
 eo_mat = np.empty([iterations,ncol])
 acc_mat = np.empty([iterations,ncol])
@@ -101,8 +109,8 @@ for i in range(iterations):
   f_forest = fis_tree(clf,X,y,z,0,regression=True,alpha = 0.5)
   f_forest._calculate_fairness_importance_score()
   
-  dp_mat[i] = f_forest._fairness_importance_score_dp
-  eo_mat[i] = f_forest._fairness_importance_score_eqop
+  dp_mat[i] = f_forest._fairness_importance_score_dp_root
+  eo_mat[i] = f_forest._fairness_importance_score_eqop_root
   acc_mat[i] = clf.feature_importances_
 
 
@@ -114,7 +122,7 @@ acc_mean = np.mean(acc_mat, axis = 0)
 
 print(f"500 fair: {dp_mean}")
 print(f"500 acc: {acc_mean}")
-#np.savetxt("/home/camille/FairFIS/results/dp_tree_500.csv", dp_mean, delimiter= ",")
+#np.savetxt("../benchmark/result/dp_tree_reg_1000.csv", dp_mean, delimiter= ",")
 
 #%%
 

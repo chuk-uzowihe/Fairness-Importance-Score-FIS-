@@ -119,17 +119,27 @@ def fairness_regression(leftX,lefty,rightX,righty,protected_attribute,protected_
     #print("probabilistic")
     left_pred = np.mean(lefty)
     right_pred = np.mean(righty)
+
+    '''
+    len_left = len(lefty)
+    y = np.concatenate((lefty,righty), axis = 0)
+    y_norm = (y-np.min(y))/(np.max(y)-np.min(y))
+    lefty_norm = y_norm[:len_left]
+    righty_norm = y_norm[len_left:]
+    left_pred = np.mean(lefty_norm)
+    right_pred = np.mean(righty_norm)
+    '''
+    
     left_protected = len([l for (x,l) in zip(leftX,lefty) if
         x[protected_attribute] == protected_val])
     left_el = len(lefty) - left_protected
     right_protected = len([l for (x,l) in zip(rightX,righty) if
         x[protected_attribute] == protected_val])
     right_el = len(lefty) - right_protected
-    
-    
+
     pred_protected = (left_protected*left_pred + right_protected * right_pred)/(left_protected + right_protected) if (left_protected + right_protected) != 0 else 0
     pred_el = (left_el*left_pred + right_el * right_pred)/(left_el + right_el)  if (left_el + right_el) != 0 else 0  
-    bias = math.exp(-abs(pred_protected - pred_el))    
+    bias = (abs(pred_protected - pred_el))    
     return (bias)
 
 def fairness_multiclass(leftX,lefty,rightX,righty,protected_attribute,protected_val,alpha = 1):
