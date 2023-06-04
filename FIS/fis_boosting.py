@@ -8,7 +8,7 @@ from joblib import Parallel, delayed
 
 
 class fis_boosting():
-    def __init__(self, fitted_clf,train_x,train_y, protected_attribute, protected_value, normalize = True, regression = False, multiclass = False):
+    def __init__(self, fitted_clf,train_x,train_y, protected_attribute, protected_value, normalize = True, regression = False, multiclass = False,triangle = True):
         self.fitted_clf = fitted_clf
         self.train_x = train_x
         self.train_y = train_y
@@ -23,10 +23,11 @@ class fis_boosting():
         self.normalize = normalize
         self.regression = regression
         self.multiclass = multiclass
+        self.triangle = True
 
 
     def each_tree(self,index):
-        individual_tree = fis_tree(self.fitted_clf.estimators_[index,0], self.train_x, self.train_y, self.protected_attribute, self.protected_value, normalize = False, regression=self.regression, multiclass = self.multiclass)
+        individual_tree = fis_tree(self.fitted_clf.estimators_[index,0], self.train_x, self.train_y, self.protected_attribute, self.protected_value, normalize = False, regression=self.regression, multiclass = self.multiclass, triangle=self.triangle)
         individual_tree._calculate_fairness_importance_score()
         return individual_tree
     
@@ -50,8 +51,10 @@ class fis_boosting():
             null_dp, null_eq, feature_null = individual_tree.get_null_fairness()
             self.individual_feature_values[feature].append((dp,eq,null_dp,null_eq))
             for i in range(self.number_of_features):
-                self._fairness_importance_score_dp[i] += individual_tree._fairness_importance_score_dp_root[i]
-                self._fairness_importance_score_eqop[i] += individual_tree._fairness_importance_score_eqop_root[i]
+                self._fairness_importance_score_dp[i] += individual_tree._fairness_importance_score_dp[i]
+                self._fairness_importance_score_eqop[i] += individual_tree._fairness_importance_score_eqop[i]
+                self._fairness_importance_score_dp_root[i] += individual_tree._fairness_importance_score_dp_root[i]
+                self._fairness_importance_score_eqop_root[i] += individual_tree._fairness_importance_score_eqop_root[i]
         self._fairness_importance_score_dp /= (self.fitted_clf.n_estimators_)
         self._fairness_importance_score_eqop /= (self.fitted_clf.n_estimators_)
         if self.normalize == True:

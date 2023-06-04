@@ -31,7 +31,7 @@ def eqop(data,label, prediction, protectedIndex, protectedValue):
     tnr_protected = tn_protected / len(protected_negative) if len(protected_negative)!= 0 else 0
     tnr_el = tn_el / len(el_negative) if len(el_negative)!= 0 else 0
     negative_rate = tnr_protected - tnr_el
-    eqop = abs(tpr_el - tpr_protected)
+    eqop = (tpr_el - tpr_protected)
     
     return (eqop)
 # %%
@@ -47,7 +47,7 @@ def DP(data, labels, prediction,protectedIndex, protectedValue):
     protectedProb = sum(1 for (x,l) in protectedClass if l == 1) / len(protectedClass) if len(protectedClass) != 0 else 0
     elseProb = sum(1 for (x,l) in elseClass  if l == 1) / len(elseClass) if len(elseClass) != 0 else 0
     #print("protected class, non-protected class, protected positive, non-protected positive",len(protectedClass),len(elseClass),p,q)
-    return abs(elseProb - protectedProb)
+    return (elseProb - protectedProb)
 #%%
 def gini(y):
     total_classes, count = np.unique(y, return_counts=True)
@@ -75,7 +75,7 @@ def draw_plot(x,y,dest,name):
     plt.show()
 
 #%%
-def fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairness_metric):
+def fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairness_metric, triangle):
     #print("probabilistic")
     valueLeft, countLeft = np.unique(lefty, return_counts=True)
     valueRight, countRight = np.unique(righty, return_counts=True)
@@ -111,24 +111,17 @@ def fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairnes
         #fairness_score11 = DP(x,y,pred11,protected_attribute,protected_val)
     
     #print(fairness_score00, fairness_score01, fairness_score10, fairness_score11)
-    fairness_score =  fairness_score01*right1 + fairness_score10*left1
-    return 1 - abs(fairness_score)
+    if triangle == True:
+        fairness_score =  abs(fairness_score01)*right1 + abs(fairness_score10)*left1
+    else:
+        fairness_score =  (fairness_score01)*right1 + (fairness_score10)*left1
+    return abs(fairness_score)
 
 
 def fairness_regression(leftX,lefty,rightX,righty,protected_attribute,protected_val,previous,alpha = 1):
     #print("probabilistic")
     left_pred = np.mean(lefty)
     right_pred = np.mean(righty)
-
-    '''
-    len_left = len(lefty)
-    y = np.concatenate((lefty,righty), axis = 0)
-    y_norm = (y-np.min(y))/(np.max(y)-np.min(y))
-    lefty_norm = y_norm[:len_left]
-    righty_norm = y_norm[len_left:]
-    left_pred = np.mean(lefty_norm)
-    right_pred = np.mean(righty_norm)
-    '''
     
     left_protected = len([l for (x,l) in zip(leftX,lefty) if
         x[protected_attribute] == protected_val])
