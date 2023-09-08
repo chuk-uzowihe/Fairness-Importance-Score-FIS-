@@ -79,7 +79,7 @@ def fairness(leftX,lefty,rightX,righty,protected_attribute,protected_val,fairnes
     #print("probabilistic")
     valueLeft, countLeft = np.unique(lefty, return_counts=True)
     valueRight, countRight = np.unique(righty, return_counts=True)
-    print(countLeft, countRight)
+    # print(countLeft, countRight)
     if len(countLeft) == 2:
         left0, left1 = countLeft[0]/len(lefty), countLeft[1]/len(lefty)
     if len(countRight) == 2:
